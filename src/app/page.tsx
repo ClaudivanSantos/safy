@@ -12,8 +12,14 @@ export default function Home() {
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Link
-            href="/api/health"
+            href="/preco-medio"
             className="rounded-lg bg-primary px-6 py-3 font-medium text-black transition-colors hover:bg-primary-hover"
+          >
+            Preço Médio
+          </Link>
+          <Link
+            href="/api/health"
+            className="rounded-lg border border-border bg-muted px-6 py-3 font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
           >
             Testar API
           </Link>

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SerwistProvider } from "./serwist";
+import { AuthHeader } from "./components/auth-header";
+import { ValidacaoGuard } from "./components/validacao-guard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +41,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
         suppressHydrationWarning
       >
-        <SerwistProvider swUrl="/serwist/sw.js">{children}</SerwistProvider>
+        <SerwistProvider swUrl="/serwist/sw.js">
+          <AuthHeader />
+          <ValidacaoGuard>
+            <div className="pt-14">{children}</div>
+          </ValidacaoGuard>
+        </SerwistProvider>
       </body>
     </html>
   );

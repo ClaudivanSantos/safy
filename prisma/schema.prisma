@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  nome          String         @default("")
+  key_hash      String?        @unique // Hash SHA-256 da chave de acesso (só a chave dá login)
+  nostr_pubkey  String?        @unique
+  auth_id       String?        @unique
+  email         String?        @unique
+  telegram_id   String?        @unique
+  username      String         @default("")
+  validado      Boolean        @default(false)
+  created_at    DateTime       @default(now()) @db.Timestamptz(6)
+
+  wallets   Wallet[]
+  settings  UserSettings?
+  purchases Purchase[]
+}
+
+model Purchase {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  currency   String   // BRL, USD, BTC, etc.
+  preco      Float
+  quantidade Float
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([user_id, currency])
+}
+
+model Wallet {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  address    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model UserSettings {
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @unique @db.Uuid
+  donation_hidden Boolean  @default(false)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
