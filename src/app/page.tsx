@@ -18,6 +18,18 @@ export default function Home() {
             Preço Médio
           </Link>
           <Link
+            href="/saude-defi"
+            className="rounded-lg bg-primary px-6 py-3 font-medium text-black transition-colors hover:bg-primary-hover"
+          >
+            💉 Saúde DeFi (Aave)
+          </Link>
+          <Link
+            href="/pools-liquidez"
+            className="rounded-lg bg-primary px-6 py-3 font-medium text-black transition-colors hover:bg-primary-hover"
+          >
+            🌊 Pools de Liquidez
+          </Link>
+          <Link
             href="/api/health"
             className="rounded-lg border border-border bg-muted px-6 py-3 font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
           >
