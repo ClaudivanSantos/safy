@@ -5,40 +5,23 @@ import { isAddress } from "viem";
 import {
   POOL_NETWORKS,
   POOL_NETWORK_IDS,
+  POOL_PROTOCOL_IDS,
   POOLS_SUBGRAPH_API,
   type PoolNetworkId,
+  type PoolProtocolVersion,
+  getProtocolLabel,
   getKrystalLiquidityUrl,
   getDexLiquidityUrl,
 } from "./pools-config";
 
-type PairToken = {
-  symbol: string;
-  decimals: string;
-};
-
-type PairData = {
-  id: string;
-  reserve0: string;
-  reserve1: string;
-  reserveUSD: string;
-  totalSupply: string;
-  token0: PairToken;
-  token1: PairToken;
-};
-
-type LiquidityPosition = {
-  id: string;
-  liquidityTokenBalance: string;
-  pair: PairData;
-};
-
 type PoolRow = {
   id: string;
+  protocol: PoolProtocolVersion;
   pairAddress: string;
   token0Symbol: string;
   token1Symbol: string;
   /** Valor depositado em USD (participação no pool) */
-  valorDepositadoUsd: string;
+  valorDepositadoUsd: string | null;
   /** P/L estimado — sem base de custo não calculamos */
   plEstimado: string | null;
   /** IL aproximado — sem histórico de entrada não calculamos */
@@ -58,135 +41,42 @@ function formatUsd(value: string | number): string {
   }).format(num);
 }
 
-function parsePositionToRow(lp: LiquidityPosition): PoolRow {
-  const pair = lp.pair;
-  const balance = parseFloat(lp.liquidityTokenBalance);
-  const totalSupply = parseFloat(pair.totalSupply);
-  const reserveUsd = parseFloat(pair.reserveUSD);
-  const share = totalSupply > 0 ? balance / totalSupply : 0;
-  const valorDepositadoUsd = share * reserveUsd;
-
-  return {
-    id: lp.id,
-    pairAddress: pair.id,
-    token0Symbol: pair.token0.symbol,
-    token1Symbol: pair.token1.symbol,
-    valorDepositadoUsd: valorDepositadoUsd.toFixed(2),
-    plEstimado: null,
-    ilAproximado: null,
-    feesEstimadas: null,
-    share,
-  };
-}
-
-const UNISWAP_V2_LIQUIDITY_POSITIONS_QUERY = `
-  query LiquidityPositions($user: ID!) {
-    liquidityPositions(
-      where: { user: $user, liquidityTokenBalance_gt: "0" }
-      first: 100
-    ) {
-      id
-      liquidityTokenBalance
-      pair {
-        id
-        reserve0
-        reserve1
-        reserveUSD
-        totalSupply
-        token0 { symbol decimals }
-        token1 { symbol decimals }
-      }
-    }
-  }
-`;
-
-/** Alternativa: buscar pelo entity User (id = endereço em minúsculo). */
-const UNISWAP_V2_USER_POSITIONS_QUERY = `
-  query UserLiquidityPositions($id: ID!) {
-    user(id: $id) {
-      id
-      liquidityPositions(where: { liquidityTokenBalance_gt: "0" }, first: 100) {
-        id
-        liquidityTokenBalance
-        pair {
-          id
-          reserve0
-          reserve1
-          reserveUSD
-          totalSupply
-          token0 { symbol decimals }
-          token1 { symbol decimals }
-        }
-      }
-    }
-  }
-`;
-
 export default function PoolsLiquidezClient() {
   const [selectedNetworkId, setSelectedNetworkId] = useState<PoolNetworkId>("ethereum");
+  const [selectedProtocol, setSelectedProtocol] = useState<PoolProtocolVersion>("v3");
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pools, setPools] = useState<PoolRow[]>([]);
 
   const network = POOL_NETWORKS[selectedNetworkId];
-  const subgraphEnabled = network.subgraphEnabled;
+  const networkEnabled = network.subgraphEnabled;
 
   const fetchPools = useCallback(
     async (userAddress: string) => {
-      if (!network.subgraphEnabled) {
+      if (!networkEnabled) {
         throw new Error("Serviço indisponível para esta rede no momento.");
       }
-      const id = userAddress.toLowerCase();
-      const variablesDirect = { user: id };
-      const variablesUser = { id };
-
-      const tryQuery = async (
-        query: string,
-        variables: { user?: string; id?: string }
-      ): Promise<LiquidityPosition[]> => {
-        const res = await fetch(POOLS_SUBGRAPH_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            networkId: selectedNetworkId,
-            query,
-            variables,
-          }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          const msg = err?.errors?.[0]?.message ?? `Erro ${res.status}`;
-          throw new Error(msg);
-        }
-        const json = (await res.json()) as {
-          data?: {
-            liquidityPositions?: LiquidityPosition[];
-            user?: { liquidityPositions?: LiquidityPosition[] } | null;
-          };
-          errors?: { message: string }[];
-        };
-        if (json.errors?.length) {
-          throw new Error(json.errors.map((e) => e.message).join("; "));
-        }
-        const list = json.data?.liquidityPositions ?? [];
-        if (list.length > 0) return list;
-        const fromUser = json.data?.user?.liquidityPositions ?? [];
-        return fromUser;
+      const res = await fetch(POOLS_SUBGRAPH_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          networkId: selectedNetworkId,
+          protocolVersion: selectedProtocol,
+          address: userAddress.toLowerCase(),
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        pools?: PoolRow[];
+        errors?: { message: string }[];
       };
-
-      let list: LiquidityPosition[];
-      try {
-        list = await tryQuery(
-          UNISWAP_V2_LIQUIDITY_POSITIONS_QUERY,
-          variablesDirect
-        );
-      } catch {
-        list = await tryQuery(UNISWAP_V2_USER_POSITIONS_QUERY, variablesUser);
+      if (!res.ok || json.errors?.length) {
+        const msg = json.errors?.[0]?.message ?? `Erro ${res.status}`;
+        throw new Error(msg);
       }
-      setPools(list.map(parsePositionToRow));
+      setPools(json.pools ?? []);
     },
-    [selectedNetworkId, network.subgraphEnabled]
+    [selectedNetworkId, selectedProtocol, networkEnabled]
   );
 
   const handleVerificar = async () => {
@@ -200,7 +90,7 @@ export default function PoolsLiquidezClient() {
       setError("Endereço inválido.");
       return;
     }
-    if (!subgraphEnabled) {
+    if (!networkEnabled) {
       setError(
         "Esta rede não está disponível no momento. Tente outra rede."
       );
@@ -225,9 +115,6 @@ export default function PoolsLiquidezClient() {
           <h1 className="text-2xl font-bold text-primary">
             Pools de Liquidez
           </h1>
-          <p className="mt-1 text-sm text-foreground/70">
-            Análise em apenas leitura. Selecione a rede e a carteira para listar os pools detectados.
-          </p>
         </header>
 
         {/* Entrada */}
@@ -248,14 +135,37 @@ export default function PoolsLiquidezClient() {
               <select
                 value={selectedNetworkId}
                 onChange={(e) => {
-                  setSelectedNetworkId(e.currentTarget.value as PoolNetworkId);
+                  const value = (e.target as { value?: string }).value;
+                  if (value) setSelectedNetworkId(value as PoolNetworkId);
                   setError(null);
+                  setPools([]);
                 }}
                 className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {POOL_NETWORK_IDS.map((id) => (
                   <option key={id} value={id}>
                     {POOL_NETWORKS[id].name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-foreground/70">
+                Protocolo
+              </label>
+              <select
+                value={selectedProtocol}
+                onChange={(e) => {
+                  const value = (e.target as { value?: string }).value;
+                  if (value) setSelectedProtocol(value as PoolProtocolVersion);
+                  setError(null);
+                  setPools([]);
+                }}
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                {POOL_PROTOCOL_IDS.map((protocol) => (
+                  <option key={protocol} value={protocol}>
+                    {getProtocolLabel(protocol)}
                   </option>
                 ))}
               </select>
@@ -269,7 +179,7 @@ export default function PoolsLiquidezClient() {
                 placeholder="0x..."
                 value={address}
                 onChange={(e) => {
-                  setAddress(e.currentTarget.value ?? "");
+                  setAddress((e.target as { value?: string }).value ?? "");
                   setError(null);
                 }}
                 className="rounded-lg border border-border bg-background px-3 py-2.5 font-mono text-sm text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -284,9 +194,6 @@ export default function PoolsLiquidezClient() {
               {loading ? "Buscando…" : "Verificar"}
             </button>
           </div>
-          <p className="mt-2 text-xs text-foreground/60">
-            Dados via subgraph (leitura). Nenhuma transação é enviada.
-          </p>
         </section>
 
         {/* Lista de pools */}
@@ -296,7 +203,7 @@ export default function PoolsLiquidezClient() {
           </h2>
           {pools.length === 0 && !loading && (
             <p className="py-6 text-center text-sm text-foreground/50">
-              Nenhum pool encontrado. Verifique a rede e o endereço ou configure o subgraph.
+              Nenhum pool encontrado para este protocolo. Verifique rede/endereco e se a carteira tem posicoes ativas.
             </p>
           )}
           <ul className="space-y-4">
@@ -310,7 +217,10 @@ export default function PoolsLiquidezClient() {
                     {pool.token0Symbol} / {pool.token1Symbol}
                   </h3>
                   <span className="text-xs text-foreground/60">
-                    {(pool.share * 100).toFixed(4)}% do pool
+                    {getProtocolLabel(pool.protocol)}
+                    {pool.protocol === "v2"
+                      ? ` - ${(pool.share * 100).toFixed(4)}% do pool`
+                      : ""}
                   </span>
                 </div>
 
@@ -318,7 +228,7 @@ export default function PoolsLiquidezClient() {
                   <div className="rounded border border-border/50 bg-muted/20 p-2">
                     <span className="text-foreground/60">Valor depositado</span>
                     <p className="font-medium text-foreground">
-                      ${formatUsd(pool.valorDepositadoUsd)}
+                      {pool.valorDepositadoUsd ? `$${formatUsd(pool.valorDepositadoUsd)}` : "—"}
                     </p>
                   </div>
                   <div className="rounded border border-border/50 bg-muted/20 p-2">
@@ -366,7 +276,7 @@ export default function PoolsLiquidezClient() {
                     </svg>
                   </a>
                   <a
-                    href={getDexLiquidityUrl(selectedNetworkId, pool.pairAddress)}
+                    href={getDexLiquidityUrl(selectedNetworkId, pool.protocol, pool.pairAddress)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-black hover:bg-primary-hover"

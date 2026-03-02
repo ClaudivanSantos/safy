@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Safy App",
-  description: "Progressive Web App Safy",
-  applicationName: "Safy App",
+  title: "Safy",
+  description: "Ferramenta gratuita para decisões mais seguras em DeFi.",
+  applicationName: "Safy",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -44,7 +44,9 @@ export default function RootLayout({
         <SerwistProvider swUrl="/serwist/sw.js">
           <AuthHeader />
           <ValidacaoGuard>
-            <div className="pt-14">{children}</div>
+            <div className="flex h-screen flex-col overflow-hidden pt-14">
+              <main className="min-h-0 flex-1 overflow-auto">{children}</main>
+            </div>
           </ValidacaoGuard>
         </SerwistProvider>
       </body>

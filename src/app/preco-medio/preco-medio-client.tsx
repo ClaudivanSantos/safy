@@ -13,6 +13,7 @@ import {
   Bar,
   Cell,
 } from "recharts";
+import * as XLSX from "xlsx";
 import {
   addPurchase,
   clearPurchases,
@@ -32,6 +33,15 @@ const CURRENCY_SYMBOL: Record<string, string> = {
   DOGE: "DOGE ",
   AVAX: "AVAX ",
 };
+
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+function getFieldValue(target: unknown): string {
+  return (target as { value: string }).value;
+}
 
 function formatDate(d: Date) {
   return new Date(d).toLocaleDateString("pt-BR", {
@@ -70,11 +80,11 @@ export default function PrecoMedioClient({
 
   const filtered = purchases.filter((p) => p.currency === currency);
   const totalQuantidade = filtered.reduce((s, e) => s + e.quantidade, 0);
-  const totalInvestido = filtered.reduce(
+  const totalInvestidoUsd = filtered.reduce(
     (s, e) => s + e.preco * e.quantidade,
     0
   );
-  const precoMedio = totalQuantidade > 0 ? totalInvestido / totalQuantidade : 0;
+  const precoMedio = totalQuantidade > 0 ? totalInvestidoUsd / totalQuantidade : 0;
   const precoAtualNum = parseFloat(precoAtual.replace(",", ".")) || 0;
   const plValor =
     totalQuantidade > 0 && precoAtualNum > 0
@@ -84,6 +94,11 @@ export default function PrecoMedioClient({
     precoMedio > 0 && precoAtualNum > 0
       ? ((precoAtualNum - precoMedio) / precoMedio) * 100
       : null;
+  const modalPrecoNum = parseFloat(preco.replace(",", ".")) || 0;
+  const modalQuantidadeNum = parseFloat(quantidade.replace(",", ".")) || 0;
+  const modalTotalUsd = modalPrecoNum > 0 && modalQuantidadeNum > 0
+    ? modalPrecoNum * modalQuantidadeNum
+    : 0;
 
   // Dados para gráfico de evolução do preço médio (por data)
   const chartData = filtered.reduce<
@@ -158,6 +173,55 @@ export default function PrecoMedioClient({
     else load();
   };
 
+  const exportRows = purchases.map((p) => ({
+    Moeda: p.currency,
+    Data: new Date(p.created_at).toLocaleDateString("pt-BR"),
+    "Preço (USD)": p.preco,
+    Quantidade: p.quantidade,
+    "Total (USD)": Math.round(p.preco * p.quantidade * 100) / 100,
+  }));
+
+  const exportToCSV = () => {
+    if (exportRows.length === 0) return;
+    const headers = ["Moeda", "Data", "Preço (USD)", "Quantidade", "Total (USD)"];
+    const csvContent = [
+      headers.join(";"),
+      ...exportRows.map((r) =>
+        [r.Moeda, r.Data, r["Preço (USD)"], r.Quantidade, r["Total (USD)"]].join(";")
+      ),
+    ].join("\n");
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const doc = (globalThis as unknown as { document?: { createElement: (tag: string) => HTMLElement } }).document;
+    const link = doc?.createElement("a") as (HTMLElement & { setAttribute(name: string, value: string): void; click(): void }) | undefined;
+    if (link) {
+      link.setAttribute("href", url);
+      link.setAttribute("download", `preco-medio-${new Date().toISOString().slice(0, 10)}.csv`);
+      link.click();
+    }
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = () => {
+    if (exportRows.length === 0) return;
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Compras");
+    const resumo = Object.entries(byCurrency).map(([moeda, v]) => ({
+      Moeda: moeda,
+      "Total investido (USD)": Math.round(v.totalInvestido * 100) / 100,
+      "Quantidade total": v.totalQty,
+      "Preço médio (USD)":
+        v.totalQty > 0 ? Math.round((v.totalInvestido / v.totalQty) * 100) / 100 : 0,
+    }));
+    if (resumo.length > 0) {
+      const wsResumo = XLSX.utils.json_to_sheet(resumo);
+      XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo por moeda");
+    }
+    XLSX.writeFile(wb, `preco-medio-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   const symbol = CURRENCY_SYMBOL[currency] ?? currency;
 
   return (
@@ -170,13 +234,48 @@ export default function PrecoMedioClient({
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {purchases.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={exportToCSV}
+                className="rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Exportar CSV
+              </button>
+              <button
+                type="button"
+                onClick={exportToExcel}
+                className="rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Exportar Excel
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setModalOpen(true);
+              setModalCurrency(currency);
+              setDataCompra(new Date().toISOString().slice(0, 10));
+              setError(null);
+            }}
+            className="rounded-lg bg-primary px-5 py-2.5 font-medium text-black transition-colors hover:bg-primary-hover"
+          >
+            Adicionar compra
+          </button>
+        </div>
+
         <div>
           <label className="mb-1 block text-xs font-medium text-foreground/80">
             Criptomoeda
           </label>
           <select
             value={currency}
-            onChange={(e) => setCurrency(e.currentTarget.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setCurrency(getFieldValue(e.currentTarget))
+            }
             className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             {MOEDAS.map((m) => (
@@ -192,21 +291,6 @@ export default function PrecoMedioClient({
             {error}
           </div>
         )}
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => {
-              setModalOpen(true);
-              setModalCurrency(currency);
-              setDataCompra(new Date().toISOString().slice(0, 10));
-              setError(null);
-            }}
-            className="rounded-lg bg-primary px-5 py-2.5 font-medium text-black transition-colors hover:bg-primary-hover"
-          >
-            Adicionar compra
-          </button>
-        </div>
 
         {purchases.length > 0 && (
           <>
@@ -234,9 +318,10 @@ export default function PrecoMedioClient({
                         border: "1px solid #3f3f46",
                         borderRadius: "8px",
                       }}
-                      formatter={(value: number, _name: string, props: { payload?: { name?: string } }) => {
-                        const sym = CURRENCY_SYMBOL[props.payload?.name ?? ""] ?? "";
-                        return [`${sym} ${Number(value).toFixed(2)}`, "Total"];
+                      formatter={(value, _name, item) => {
+                        const coin = item?.payload?.name as string | undefined;
+                        const sym = CURRENCY_SYMBOL[coin ?? ""] ?? "";
+                        return [`${sym} ${usdFormatter.format(Number(value ?? 0))}`, "Total"];
                       }}
                     />
                     <Bar dataKey="total" radius={[4, 4, 0, 0]}>
@@ -271,8 +356,8 @@ export default function PrecoMedioClient({
                     className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm"
                   >
                     <span className="text-foreground">
-                      {ent.quantidade} × {symbol} {ent.preco.toFixed(2)} = {symbol}{" "}
-                      {(ent.preco * ent.quantidade).toFixed(2)}
+                      {ent.quantidade} {currency} × {usdFormatter.format(ent.preco)} ={" "}
+                      {usdFormatter.format(ent.preco * ent.quantidade)}
                     </span>
                     <button
                       type="button"
@@ -314,8 +399,8 @@ export default function PrecoMedioClient({
                         border: "1px solid #3f3f46",
                         borderRadius: "8px",
                       }}
-                      formatter={(value: number) => [
-                        `${symbol} ${value.toFixed(2)}`,
+                      formatter={(value) => [
+                        `${usdFormatter.format(Number(value ?? 0))}`,
                         "Preço médio",
                       ]}
                       labelFormatter={(label) => `Data: ${label}`}
@@ -335,9 +420,9 @@ export default function PrecoMedioClient({
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border border-border bg-muted/50 p-4">
-                <p className="text-xs text-foreground/70">Total investido</p>
+                <p className="text-xs text-foreground/70">Total investido (USD)</p>
                 <p className="text-xl font-semibold text-foreground">
-                  {symbol} {totalInvestido.toFixed(2)}
+                  {usdFormatter.format(totalInvestidoUsd)}
                 </p>
               </div>
               <div className="rounded-lg border border-border bg-muted/50 p-4">
@@ -361,7 +446,9 @@ export default function PrecoMedioClient({
                 inputMode="decimal"
                 placeholder="0,00"
                 value={precoAtual}
-                onChange={(e) => setPrecoAtual(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPrecoAtual(getFieldValue(e.currentTarget))
+                }
                 className="mb-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
               {plValor !== null && plPercent !== null && (
@@ -374,7 +461,7 @@ export default function PrecoMedioClient({
                         : "text-lg font-semibold text-red-400"
                     }
                   >
-                    {symbol} {plValor.toFixed(2)} ({plPercent >= 0 ? "+" : ""}
+                    {usdFormatter.format(plValor)} ({plPercent >= 0 ? "+" : ""}
                     {plPercent.toFixed(1)}%)
                   </p>
                 </div>
@@ -413,7 +500,9 @@ export default function PrecoMedioClient({
                   </label>
                   <select
                     value={modalCurrency}
-                    onChange={(e) => setModalCurrency(e.currentTarget.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      setModalCurrency(getFieldValue(e.currentTarget))
+                    }
                     className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     {MOEDAS.map((m) => (
@@ -425,7 +514,7 @@ export default function PrecoMedioClient({
                 </div>
                 <div>
                   <label htmlFor="modal-preco" className="mb-1 block text-xs font-medium text-foreground/80">
-                    Preço
+                    Preço unitário (USD)
                   </label>
                   <input
                     id="modal-preco"
@@ -433,7 +522,9 @@ export default function PrecoMedioClient({
                     inputMode="decimal"
                     placeholder="0,00"
                     value={preco}
-                    onChange={(e) => setPreco(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPreco(getFieldValue(e.currentTarget))
+                    }
                     className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -446,13 +537,15 @@ export default function PrecoMedioClient({
                     type="date"
                     required
                     value={dataCompra}
-                    onChange={(e) => setDataCompra(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setDataCompra(getFieldValue(e.currentTarget))
+                    }
                     className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div>
                   <label htmlFor="modal-quantidade" className="mb-1 block text-xs font-medium text-foreground/80">
-                    Quantidade
+                    Quantidade de {modalCurrency}
                   </label>
                   <input
                     id="modal-quantidade"
@@ -460,8 +553,22 @@ export default function PrecoMedioClient({
                     inputMode="decimal"
                     placeholder="0"
                     value={quantidade}
-                    onChange={(e) => setQuantidade(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setQuantidade(getFieldValue(e.currentTarget))
+                    }
                     className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="modal-total-usd" className="mb-1 block text-xs font-medium text-foreground/80">
+                    Valor total (USD)
+                  </label>
+                  <input
+                    id="modal-total-usd"
+                    type="text"
+                    value={usdFormatter.format(modalTotalUsd)}
+                    readOnly
+                    className="w-full rounded-lg border border-border bg-muted/60 px-3 py-2 text-foreground"
                   />
                 </div>
                 <div className="flex gap-2 pt-2">

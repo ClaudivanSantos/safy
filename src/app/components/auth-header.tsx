@@ -16,11 +16,31 @@ export async function AuthHeader() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-primary">
-          <Image src="/logo.png" alt="Safy" width={100} height={100}/>
+      <div className="mx-auto flex h-14 max-w-4xl items-center justify-between gap-4 px-4">
+        <Link href="/" className="flex shrink-0 items-center">
+          <Image src="/logo.png" alt="Safy" width={120} height={100} className="rounded" />
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-1 sm:gap-2">
+          <Link
+            href="/preco-medio"
+            className="rounded-md px-3 py-2 text-sm font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary"
+          >
+            Preço Médio
+          </Link>
+          <Link
+            href="/pools-liquidez"
+            className="rounded-md px-3 py-2 text-sm font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary"
+          >
+            Pools
+          </Link>
+          <Link
+            href="/saude-defi"
+            className="rounded-md px-3 py-2 text-sm font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary"
+          >
+            Saúde DeFi (Aave)
+          </Link>
+        </nav>
+        <div className="flex shrink-0 items-center">
           {session ? (
             <UserMenu userName={userName} />
           ) : (
@@ -31,7 +51,7 @@ export async function AuthHeader() {
               Entrar
             </Link>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );
