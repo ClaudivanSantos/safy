@@ -17,13 +17,18 @@ export function UserMenu({ userName }: UserMenuProps) {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const el = menuRef.current as unknown as { contains(node: unknown): boolean } | null;
+      if (el && !el.contains(e.target)) {
         setOpen(false);
       }
     }
-    if (open) {
-      document.addEventListener("click", handleClickOutside);
-      return () => document.removeEventListener("click", handleClickOutside);
+    const doc =
+      typeof globalThis !== "undefined"
+        ? (globalThis as unknown as { document?: { addEventListener: (t: string, h: (e: MouseEvent) => void) => void; removeEventListener: (t: string, h: (e: MouseEvent) => void) => void } }).document ?? null
+        : null;
+    if (open && doc) {
+      doc.addEventListener("click", handleClickOutside);
+      return () => doc.removeEventListener("click", handleClickOutside);
     }
   }, [open]);
 

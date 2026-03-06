@@ -1,19 +1,53 @@
 "use client";
 
-import { useActionState } from "react";
-import { signup } from "../login/actions";
+import { useState } from "react";
 
 export function SignupForm() {
-  const [state, formAction] = useActionState(
-    async (_: unknown, formData: FormData) => {
-      const result = await signup(formData);
-      return result?.error ?? null;
-    },
-    null
-  );
+  const [state, setState] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setState(null);
+    setLoading(true);
+    const trimmedNome = nome.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: trimmedNome,
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        redirect?: string;
+      };
+
+      if (!res.ok) {
+        setState(data.error ?? "Erro ao criar conta.");
+        return;
+      }
+
+      const loc = (globalThis as { location?: { href: string } }).location;
+      if (loc) loc.href = data.redirect ?? "/";
+    } catch (error) {
+      setState(error instanceof Error ? error.message : "Erro ao criar conta.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label
           htmlFor="nome"
@@ -28,6 +62,10 @@ export function SignupForm() {
           required
           autoComplete="name"
           placeholder="Seu nome"
+          value={nome}
+          onChange={(e) =>
+            setNome((e.target as unknown as { value: string }).value)
+          }
           className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -45,6 +83,10 @@ export function SignupForm() {
           required
           autoComplete="email"
           placeholder="seu@email.com"
+          value={email}
+          onChange={(e) =>
+            setEmail((e.target as unknown as { value: string }).value)
+          }
           className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -64,6 +106,10 @@ export function SignupForm() {
           autoComplete="new-password"
           minLength={6}
           placeholder="Mínimo 6 caracteres"
+          value={password}
+          onChange={(e) =>
+            setPassword((e.target as unknown as { value: string }).value)
+          }
           className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -74,9 +120,10 @@ export function SignupForm() {
 
       <button
         type="submit"
+        disabled={loading}
         className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-black transition-colors hover:bg-primary-hover"
       >
-        Criar conta
+        {loading ? "Criando..." : "Criar conta"}
       </button>
     </form>
   );

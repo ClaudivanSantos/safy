@@ -71,7 +71,7 @@ export function LoginForm() {
 
   if (createdKey) {
     const copyKey = () => {
-      navigator.clipboard.writeText(createdKey);
+      (navigator as { clipboard?: { writeText: (t: string) => Promise<void> } }).clipboard?.writeText(createdKey);
     };
     return (
       <div className="space-y-4">
@@ -135,7 +135,7 @@ export function LoginForm() {
           minLength={2}
           placeholder="Como quer ser chamado"
           value={nome}
-          onChange={(e) => setNome(e.target.value)}
+          onChange={(e) => setNome((e.target as unknown as { value: string }).value)}
           className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <div className="flex gap-2">
@@ -174,7 +174,7 @@ export function LoginForm() {
           required
           placeholder="Cole sua chave aqui"
           value={key}
-          onChange={(e) => setKey(e.target.value)}
+          onChange={(e) => setKey((e.target as unknown as { value: string }).value)}
           className="w-full rounded-lg border border-border bg-muted px-4 py-3 font-mono text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <div className="flex gap-2">

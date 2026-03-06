@@ -27,10 +27,10 @@ const V3_POSITION_MANAGER = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88";
 const V3_FACTORY = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
 const V4_POSITION_MANAGER = "0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e";
 
-const V3_DEPLOY_BLOCK = 12369621n;
-const V4_DEPLOY_BLOCK = 20542267n;
+const V3_DEPLOY_BLOCK = BigInt(12369621);
+const V4_DEPLOY_BLOCK = BigInt(20542267);
 const MAX_POSITIONS = 100;
-const LOG_BLOCK_CHUNK = 500000n;
+const LOG_BLOCK_CHUNK = BigInt(500000);
 
 const erc20SymbolStringAbi = [
   {
@@ -193,7 +193,7 @@ async function readSymbol(client: ReturnType<typeof buildClient>, token: string)
   return shortAddress(token);
 }
 
-async function fetchV3Pools(client: ReturnType<typeof buildClient>, owner: string): Promise<PoolRow[]> {
+async function fetchV3Pools(client: ReturnType<typeof buildClient>, owner: `0x${string}`): Promise<PoolRow[]> {
   const balance = (await client.readContract({
     address: V3_POSITION_MANAGER,
     abi: v3PositionManagerAbi,
@@ -236,7 +236,7 @@ async function fetchV3Pools(client: ReturnType<typeof buildClient>, owner: strin
     const token1 = getAddress(position[3]);
     const fee = position[4];
     const liquidity = position[7];
-    if (liquidity <= 0n) continue;
+    if (liquidity <= BigInt(0)) continue;
 
     const poolAddress = (await client.readContract({
       address: V3_FACTORY,
@@ -265,12 +265,12 @@ async function fetchV3Pools(client: ReturnType<typeof buildClient>, owner: strin
 
 async function getTokenIdsByTransferLogs(
   client: ReturnType<typeof buildClient>,
-  owner: string
+  owner: `0x${string}`
 ): Promise<bigint[]> {
   const latest = await client.getBlockNumber();
   const owned = new Set<string>();
 
-  for (let fromBlock = V4_DEPLOY_BLOCK; fromBlock <= latest; fromBlock += LOG_BLOCK_CHUNK + 1n) {
+  for (let fromBlock = V4_DEPLOY_BLOCK; fromBlock <= latest; fromBlock += LOG_BLOCK_CHUNK + BigInt(1)) {
     const toBlock = fromBlock + LOG_BLOCK_CHUNK > latest ? latest : fromBlock + LOG_BLOCK_CHUNK;
     const [received, sent] = await Promise.all([
       client.getLogs({
@@ -280,7 +280,7 @@ async function getTokenIdsByTransferLogs(
         args: { to: owner },
         fromBlock,
         toBlock,
-      }),
+      } as any),
       client.getLogs({
         address: V4_POSITION_MANAGER,
         abi: transferEventAbi,
@@ -288,15 +288,15 @@ async function getTokenIdsByTransferLogs(
         args: { from: owner },
         fromBlock,
         toBlock,
-      }),
+      } as any),
     ]);
 
     for (const log of received) {
-      const id = (log.args.tokenId as bigint | undefined)?.toString();
+      const id = (log as { args?: { tokenId?: bigint } }).args?.tokenId?.toString();
       if (id) owned.add(id);
     }
     for (const log of sent) {
-      const id = (log.args.tokenId as bigint | undefined)?.toString();
+      const id = (log as { args?: { tokenId?: bigint } }).args?.tokenId?.toString();
       if (id) owned.delete(id);
     }
   }
@@ -306,7 +306,7 @@ async function getTokenIdsByTransferLogs(
     .slice(0, MAX_POSITIONS);
 }
 
-async function fetchV4Pools(client: ReturnType<typeof buildClient>, owner: string): Promise<PoolRow[]> {
+async function fetchV4Pools(client: ReturnType<typeof buildClient>, owner: `0x${string}`): Promise<PoolRow[]> {
   const tokenIds = await getTokenIdsByTransferLogs(client, owner);
   const rows: PoolRow[] = [];
 
@@ -325,7 +325,7 @@ async function fetchV4Pools(client: ReturnType<typeof buildClient>, owner: strin
       functionName: "getPositionLiquidity",
       args: [tokenId],
     })) as bigint;
-    if (liquidity <= 0n) continue;
+    if (liquidity <= BigInt(0)) continue;
 
     const poolAndInfo = (await client.readContract({
       address: V4_POSITION_MANAGER,

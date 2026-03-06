@@ -52,8 +52,10 @@ function formatDate(d: Date) {
 
 export default function PrecoMedioClient({
   initialPurchases,
+  isLoggedIn = true,
 }: {
   initialPurchases: PurchaseRow[];
+  isLoggedIn?: boolean;
 }) {
   const [purchases, setPurchases] = useState<PurchaseRow[]>(initialPurchases);
   const [currency, setCurrency] = useState<string>(MOEDAS[0].value);
@@ -61,9 +63,7 @@ export default function PrecoMedioClient({
   const [preco, setPreco] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [modalCurrency, setModalCurrency] = useState<string>(MOEDAS[0].value);
-  const [dataCompra, setDataCompra] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  );
+  const [dataCompra, setDataCompra] = useState("");
   const [precoAtual, setPrecoAtual] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -255,13 +255,15 @@ export default function PrecoMedioClient({
           )}
           <button
             type="button"
+            disabled={!isLoggedIn}
             onClick={() => {
               setModalOpen(true);
               setModalCurrency(currency);
               setDataCompra(new Date().toISOString().slice(0, 10));
               setError(null);
             }}
-            className="rounded-lg bg-primary px-5 py-2.5 font-medium text-black transition-colors hover:bg-primary-hover"
+            className="rounded-lg bg-primary px-5 py-2.5 font-medium text-black transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            title={!isLoggedIn ? "Faça login para adicionar compras." : undefined}
           >
             Adicionar compra
           </button>

@@ -49,6 +49,9 @@ export const POOL_PROTOCOL_IDS: PoolProtocolVersion[] = ["v2", "v3", "v4"];
 /** URL da API interna que consulta pools on-chain. */
 export const POOLS_SUBGRAPH_API = "/api/pools-subgraph";
 
+/** API Llama Yield (pública, sem token) - lista global de pools. */
+export const LLAMA_YIELDS_POOLS_API = "https://yields.llama.fi/pools";
+
 export function getProtocolLabel(protocol: PoolProtocolVersion): string {
   if (protocol === "v2") return "Uniswap V2";
   if (protocol === "v3") return "Uniswap V3";

@@ -2,6 +2,12 @@
 
 import { useEffect, useCallback, useState } from "react";
 
+type Doc = {
+  addEventListener: (type: string, handler: EventListener) => void;
+  removeEventListener: (type: string, handler: EventListener) => void;
+  body: { style: { overflow: string } };
+};
+
 const DONATION_ADDRESSES = {
   lightning:
     process.env.NEXT_PUBLIC_DONATION_LIGHTNING || "safy@getalby.com",
@@ -22,24 +28,34 @@ export function DonationModal({
 }) {
   const copyToClipboard = useCallback(async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
-      return true;
+      const nav = navigator as { clipboard?: { writeText: (t: string) => Promise<void> } };
+      if (nav.clipboard) {
+        await nav.clipboard.writeText(text);
+        return true;
+      }
+      return false;
     } catch {
       return false;
     }
   }, []);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const doc: Doc | null =
+      typeof globalThis !== "undefined"
+        ? (globalThis as unknown as { document?: Doc }).document ?? null
+        : null;
+    const handleEscape = (e: { key: string }) => {
       if (e.key === "Escape") onClose();
     };
-    if (open) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
+    if (open && doc) {
+      doc.addEventListener("keydown", handleEscape as unknown as EventListener);
+      doc.body.style.overflow = "hidden";
     }
     return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
+      if (doc) {
+        doc.removeEventListener("keydown", handleEscape as unknown as EventListener);
+        doc.body.style.overflow = "";
+      }
     };
   }, [open, onClose]);
 

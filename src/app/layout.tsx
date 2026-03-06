@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   title: "Safy",
   description: "Ferramenta gratuita para decisões mais seguras em DeFi.",
   applicationName: "Safy",
+  icons: {
+    icon: "/logo.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

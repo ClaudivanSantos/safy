@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { createPublicClient, http, fallback, formatUnits, isAddress, encodeFunctionData, decodeAbiParameters, type Chain } from "viem";
 import { mainnet, polygon, arbitrum } from "viem/chains";
 import {
@@ -148,10 +148,10 @@ function getLiquidationData(account: UserAccountData) {
   return { liquidationCollateralBase, dropPercent };
 }
 
-export default function SaudeDefiClient() {
+export default function SaudeDefiClient({ initialAddress }: { initialAddress?: string } = {}) {
   const [selectedNetworkId, setSelectedNetworkId] =
     useState<AaveNetworkId>("ethereum");
-  const [address, setAddress] = useState("");
+  const [address, setAddress] = useState(initialAddress ?? "");
   const [liquidationMode, setLiquidationMode] = useState<"coupled" | "single-asset">("coupled");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -319,6 +319,27 @@ export default function SaudeDefiClient() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const addr = (initialAddress ?? "").trim();
+    if (!addr || !isAddress(addr)) return;
+    setAddress(addr);
+    const network = AAVE_NETWORKS[selectedNetworkId];
+    setLoading(true);
+    setError(null);
+    fetchAaveData(network, addr as `0x${string}`)
+      .catch((err) => {
+        const msg =
+          err instanceof Error ? err.message : "Erro ao buscar dados na Aave.";
+        setError(msg);
+        setAccountData(null);
+        setCollaterals([]);
+        setDebts([]);
+      })
+      .finally(() => setLoading(false));
+    // Só dispara quando a página carrega com endereço na URL
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAddress]);
 
   const hasPosition =
     accountData &&
