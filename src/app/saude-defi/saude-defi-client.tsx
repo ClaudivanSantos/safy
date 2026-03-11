@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createPublicClient, http, fallback, formatUnits, isAddress, encodeFunctionData, decodeAbiParameters, type Chain } from "viem";
 import { mainnet, polygon, arbitrum } from "viem/chains";
-import { BrowserProvider } from "ethers";
+import { useWallet, shortAddress } from "@/app/contexts/wallet-context";
 import {
   AAVE_NETWORKS,
   AAVE_NETWORK_IDS,
@@ -12,32 +12,6 @@ import {
   POOL_ABI,
   UI_POOL_DATA_PROVIDER_ABI,
 } from "./aave-config";
-
-const WALLET_STORAGE_KEY = "safy-aave-wallet";
-
-function getStoredWallet(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const s = sessionStorage.getItem(WALLET_STORAGE_KEY);
-    return s && isAddress(s) ? s : null;
-  } catch {
-    return null;
-  }
-}
-
-function setStoredWallet(address: string | null): void {
-  try {
-    if (address) sessionStorage.setItem(WALLET_STORAGE_KEY, address);
-    else sessionStorage.removeItem(WALLET_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-function shortAddress(addr: string): string {
-  if (addr.length < 10) return addr;
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
 
 const RAY = BigInt(10) ** BigInt(27);
 const WAD = BigInt(10) ** BigInt(18);
@@ -176,54 +150,17 @@ function getLiquidationData(account: UserAccountData) {
 }
 
 export default function SaudeDefiClient({ initialAddress }: { initialAddress?: string } = {}) {
+  const { address: contextAddress } = useWallet();
+  const connectedAddress = contextAddress ?? (initialAddress && isAddress(initialAddress) ? initialAddress : null);
+
   const [selectedNetworkId, setSelectedNetworkId] =
     useState<AaveNetworkId>("ethereum");
-  const [connectedAddress, setConnectedAddress] = useState<string | null>(() =>
-    typeof window !== "undefined" ? getStoredWallet() : null
-  );
-  const [connecting, setConnecting] = useState(false);
   const [liquidationMode, setLiquidationMode] = useState<"coupled" | "single-asset">("coupled");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountData, setAccountData] = useState<UserAccountData | null>(null);
   const [collaterals, setCollaterals] = useState<CollateralRow[]>([]);
   const [debts, setDebts] = useState<DebtRow[]>([]);
-
-  const connectWallet = useCallback(async () => {
-    const eth = (typeof window !== "undefined" && (window as unknown as { ethereum?: unknown }).ethereum) as
-      | { request: (args: { method: string }) => Promise<string[]> }
-      | undefined;
-    if (!eth) {
-      setError("Nenhuma carteira encontrada. Instale MetaMask ou outra extensão compatível.");
-      return;
-    }
-    setConnecting(true);
-    setError(null);
-    try {
-      const provider = new BrowserProvider(eth);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const account = accounts?.[0];
-      if (account && isAddress(account)) {
-        setConnectedAddress(account);
-        setStoredWallet(account);
-      } else {
-        setError("Nenhuma conta retornada.");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao conectar carteira.");
-    } finally {
-      setConnecting(false);
-    }
-  }, []);
-
-  const disconnectWallet = useCallback(() => {
-    setConnectedAddress(null);
-    setStoredWallet(null);
-    setAccountData(null);
-    setCollaterals([]);
-    setDebts([]);
-    setError(null);
-  }, []);
 
   const fetchAaveData = useCallback(
     async (network: AaveNetworkConfig, userAddress: `0x${string}`) => {
@@ -361,7 +298,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
   const handleVerificar = async () => {
     setError(null);
     if (!connectedAddress) {
-      setError("Conecte a carteira para verificar sua posição na Aave.");
+      setError("Conecte a carteira no header para verificar sua posição na Aave.");
       return;
     }
     if (!isAddress(connectedAddress)) {
@@ -386,15 +323,8 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
   };
 
   useEffect(() => {
-    const stored = getStoredWallet();
-    if (stored) setConnectedAddress(stored);
-  }, []);
-
-  useEffect(() => {
     const addr = (initialAddress ?? "").trim();
     if (!addr || !isAddress(addr)) return;
-    setConnectedAddress(addr);
-    setStoredWallet(addr);
     const network = AAVE_NETWORKS[selectedNetworkId];
     setLoading(true);
     setError(null);
@@ -419,24 +349,29 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
 
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
-      <div className="mx-auto max-w-3xl space-y-8">
-        <header>
-          <h1 className="text-2xl font-bold text-primary">
+      <div className="mx-auto max-w-5xl space-y-10">
+        {/* Hero */}
+        <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
+          <h1 className="relative text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Saúde DeFi — Aave
           </h1>
+          <p className="relative mt-2 text-foreground/70">
+            Verifique sua posição na Aave V3: health factor, colateral, dívida e preço de liquidação. Conecte a carteira no header e selecione a rede.
+          </p>
         </header>
 
         {/* Entrada */}
-        <section className="rounded-xl border border-border bg-muted/30 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Entrada
           </h2>
           {error && (
-            <p className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
               {error}
-            </p>
+            </div>
           )}
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground/70">
                 Rede
@@ -470,13 +405,6 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   </span>
                   <button
                     type="button"
-                    onClick={disconnectWallet}
-                    className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Desconectar
-                  </button>
-                  <button
-                    type="button"
                     onClick={handleVerificar}
                     disabled={loading}
                     className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
@@ -485,25 +413,20 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={connectWallet}
-                  disabled={connecting}
-                  className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
-                >
-                  {connecting ? "Conectando…" : "Conectar carteira"}
-                </button>
+                <p className="text-sm text-foreground/60">
+                  Conecte a carteira no header para verificar sua posição na Aave.
+                </p>
               )}
             </div>
           </div>
           <p className="mt-2 text-xs text-foreground/60">
-            Conecte a carteira e selecione a rede. Os dados são buscados na Aave V3 via RPC público (mesma base da tela de Pools).
+            Selecione a rede e conecte a carteira no header. Os dados são buscados na Aave V3 via RPC público (mesma base da tela de Pools).
           </p>
         </section>
 
         {/* Dados */}
-        <section className="rounded-xl border border-border bg-muted/30 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Dados
           </h2>
           <ul className="space-y-2 text-sm text-foreground/80">
@@ -519,12 +442,12 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
         </section>
 
         {/* Exibição */}
-        <section className="rounded-xl border border-border bg-muted/30 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Exibição
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border bg-background/50 p-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
               <p className="text-xs text-foreground/60">Health Factor</p>
               <p className="text-lg font-semibold text-primary">
                 {accountData
@@ -535,7 +458,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   : "—"}
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-background/50 p-3">
+            <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
               <p className="text-xs text-foreground/60">Total colateral</p>
               <p className="text-lg font-semibold text-foreground">
                 {accountData
@@ -545,7 +468,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   : "—"}
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-background/50 p-3">
+            <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
               <p className="text-xs text-foreground/60">Total dívida</p>
               <p className="text-lg font-semibold text-foreground">
                 {accountData
@@ -555,7 +478,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   : "—"}
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-background/50 p-3">
+            <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
               <p className="text-xs text-foreground/60">LTV / LT</p>
               <p className="text-lg font-semibold text-foreground">
                 {accountData
@@ -567,11 +490,11 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
         </section>
 
         {/* Tabelas */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground/90">Tabelas</h2>
+        <section className="space-y-6">
+          <h2 className="text-lg font-semibold text-foreground">Tabelas</h2>
 
-          <div className="rounded-xl border border-border bg-muted/30 p-4">
-            <h3 className="mb-2 text-xs font-medium text-foreground/70">
+          <div className="rounded-xl border border-border bg-muted/20 p-6">
+            <h3 className="mb-3 text-sm font-medium text-foreground/90">
               Colaterais
             </h3>
             <div className="overflow-x-auto">
@@ -591,8 +514,8 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                         className="py-4 text-center text-foreground/50"
                       >
                         {connectedAddress
-                          ? "Nenhum colateral nesta rede. Conecte e clique em Verificar."
-                          : "Conecte a carteira e clique em Verificar."}
+                          ? "Nenhum colateral nesta rede. Clique em Verificar."
+                          : "Conecte a carteira no header e clique em Verificar."}
                       </td>
                     </tr>
                   )}
@@ -611,8 +534,8 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-muted/30 p-4">
-            <h3 className="mb-2 text-xs font-medium text-foreground/70">
+          <div className="rounded-xl border border-border bg-muted/20 p-6">
+            <h3 className="mb-3 text-sm font-medium text-foreground/90">
               Empréstimos
             </h3>
             <div className="overflow-x-auto">
@@ -632,8 +555,8 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                         className="py-4 text-center text-foreground/50"
                       >
                         {connectedAddress
-                          ? "Nenhum empréstimo nesta rede. Conecte e clique em Verificar."
-                          : "Conecte a carteira e clique em Verificar."}
+                          ? "Nenhum empréstimo nesta rede. Clique em Verificar."
+                          : "Conecte a carteira no header e clique em Verificar."}
                       </td>
                     </tr>
                   )}
@@ -654,8 +577,8 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
         </section>
 
         {/* Análise de Liquidação */}
-        <section className="rounded-xl border border-border bg-muted/30 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Análise de Liquidação
           </h2>
           <div className="space-y-4">
@@ -753,7 +676,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                 <p className="mt-1 text-xs text-foreground/60">
                   {connectedAddress
                     ? "Verifique um endereço com colateral e dívida para ver o preço de liquidação."
-                    : "Conecte a carteira e verifique para ver o preço de liquidação."}
+                    : "Conecte a carteira no header e verifique para ver o preço de liquidação."}
                 </p>
               </div>
             )}
@@ -761,8 +684,8 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
         </section>
 
         {/* Links */}
-        <section className="rounded-xl border border-border bg-muted/30 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Links
           </h2>
           <a

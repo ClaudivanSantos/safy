@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { isAddress } from "viem";
-import { BrowserProvider } from "ethers";
+import { useWallet } from "@/app/contexts/wallet-context";
 import {
   POOL_NETWORKS,
   POOL_NETWORK_IDS,
@@ -16,32 +16,6 @@ import {
   getKrystalLiquidityUrl,
   getDexLiquidityUrl,
 } from "./pools-config";
-
-const WALLET_STORAGE_KEY = "safy-pools-wallet";
-
-function getStoredWallet(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const s = sessionStorage.getItem(WALLET_STORAGE_KEY);
-    return s && isAddress(s) ? s : null;
-  } catch {
-    return null;
-  }
-}
-
-function setStoredWallet(address: string | null): void {
-  try {
-    if (address) sessionStorage.setItem(WALLET_STORAGE_KEY, address);
-    else sessionStorage.removeItem(WALLET_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-function shortAddress(addr: string): string {
-  if (addr.length < 10) return addr;
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
 
 /** Item de pool retornado pela API Llama yields.llama.fi/pools */
 type LlamaPoolItem = {
@@ -131,12 +105,11 @@ function formatApy(value: number | null): string {
 }
 
 export default function PoolsLiquidezClient({ initialAddress }: { initialAddress?: string } = {}) {
+  const { address: contextAddress } = useWallet();
+  const connectedAddress = contextAddress ?? (initialAddress && isAddress(initialAddress) ? initialAddress : null);
+
   const [selectedNetworkId, setSelectedNetworkId] = useState<PoolNetworkId>("ethereum");
   const [selectedProtocol, setSelectedProtocol] = useState<PoolProtocolVersion>("v3");
-  const [connectedAddress, setConnectedAddress] = useState<string | null>(() =>
-    typeof window !== "undefined" ? getStoredWallet() : null
-  );
-  const [connecting, setConnecting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pools, setPools] = useState<PoolRow[]>([]);
@@ -144,41 +117,6 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
 
   const network = POOL_NETWORKS[selectedNetworkId];
   const networkEnabled = network.subgraphEnabled;
-
-  const connectWallet = useCallback(async () => {
-    const eth = (typeof window !== "undefined" && (window as unknown as { ethereum?: unknown }).ethereum) as
-      | { request: (args: { method: string }) => Promise<string[]> }
-      | undefined;
-    if (!eth) {
-      setError("Nenhuma carteira encontrada. Instale MetaMask ou outra extensão compatível.");
-      return;
-    }
-    setConnecting(true);
-    setError(null);
-    try {
-      const provider = new BrowserProvider(eth);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const account = accounts?.[0];
-      if (account && isAddress(account)) {
-        setConnectedAddress(account);
-        setStoredWallet(account);
-      } else {
-        setError("Nenhuma conta retornada.");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao conectar carteira.");
-    } finally {
-      setConnecting(false);
-    }
-  }, []);
-
-  const disconnectWallet = useCallback(() => {
-    setConnectedAddress(null);
-    setStoredWallet(null);
-    setPools([]);
-    setPoolsSource(null);
-    setError(null);
-  }, []);
 
   /** Multi-chain: GET /api/pools?wallet=&chain= (Dexscreener + DefiLlama + RPC). */
   const fetchByApiPools = useCallback(
@@ -309,15 +247,8 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
   };
 
   useEffect(() => {
-    const stored = getStoredWallet();
-    if (stored) setConnectedAddress(stored);
-  }, []);
-
-  useEffect(() => {
     const addr = (initialAddress ?? "").trim();
     if (!addr || !isAddress(addr)) return;
-    setConnectedAddress(addr);
-    setStoredWallet(addr);
     setLoading(true);
     setError(null);
     fetchByApiPools(addr)
@@ -333,26 +264,28 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
 
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
-      <div className="mx-auto max-w-3xl space-y-8">
-        <header>
-          <h1 className="text-2xl font-bold text-primary">
+      <div className="mx-auto max-w-5xl space-y-10">
+        {/* Hero */}
+        <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
+          <h1 className="relative text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Pools de Liquidez
           </h1>
-          <p className="mt-1 text-sm text-foreground/70">
-            Conecte sua carteira para ver suas posições LP em Ethereum, BNB Chain, Polygon ou Arbitrum (via RPC público). Sem conectar, você pode listar pools da rede via Llama.
+          <p className="relative mt-2 text-foreground/70">
+            Conecte a carteira no header para ver suas posições LP em Ethereum, BNB Chain, Polygon ou Arbitrum. Selecione a rede abaixo para listar pools ou carregar dados da Aave via Llama.
           </p>
         </header>
 
-        <section className="rounded-xl border border-border bg-muted/30 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Filtros
           </h2>
           {error && (
-            <p className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
               {error}
-            </p>
+            </div>
           )}
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-foreground/70">
                 Rede
@@ -399,55 +332,33 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {connectedAddress ? (
-                <>
-                  <span
-                    className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 font-mono text-sm text-foreground"
-                    title={connectedAddress}
-                  >
-                    {shortAddress(connectedAddress)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={disconnectWallet}
-                    className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Desconectar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleVerificar}
-                    disabled={loading}
-                    className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
-                  >
-                    {loading ? "Buscando…" : "Ver minhas posições"}
-                  </button>
-                </>
+                <span
+                  className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 font-mono text-sm text-foreground"
+                  title={connectedAddress}
+                >
+                  {connectedAddress.slice(0, 6)}…{connectedAddress.slice(-4)}
+                </span>
               ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={connectWallet}
-                    disabled={connecting}
-                    className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
-                  >
-                    {connecting ? "Conectando…" : "Conectar carteira"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleVerificar}
-                    disabled={loading}
-                    className="rounded-lg border border-border bg-muted/50 px-4 py-2.5 font-medium text-foreground hover:bg-muted disabled:opacity-50"
-                  >
-                    {loading ? "Buscando…" : "Carregar pools da rede"}
-                  </button>
-                </>
+                <p className="text-sm text-foreground/60">
+                  Conecte a carteira no header para ver suas posições.
+                </p>
               )}
+              <button
+                type="button"
+                onClick={handleVerificar}
+                disabled={loading}
+                className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
+              >
+                {connectedAddress
+                  ? (loading ? "Buscando…" : "Ver minhas posições")
+                  : (loading ? "Buscando…" : "Carregar pools da rede")}
+              </button>
             </div>
           </div>
         </section>
 
-        <section className="rounded-xl border border-border bg-muted/30 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             {poolsSource === "subgraph"
               ? "Minhas posições"
               : poolsSource === "api"
@@ -460,17 +371,17 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
           {pools.length === 0 && !loading && (
             <p className="py-6 text-center text-sm text-foreground/50">
               {connectedAddress
-                ? "Clique em \"Ver minhas posições\" para buscar suas posições LP nesta rede (RPC público + Dexscreener + DefiLlama)."
-                : "Conecte a carteira para ver suas posições ou clique em \"Carregar pools da rede\" para listar pools via Llama."}
+                ? "Clique em \"Ver minhas posições\" para buscar suas posições LP nesta rede."
+                : "Conecte a carteira no header para ver suas posições ou clique em \"Carregar pools da rede\" para listar pools via Llama."}
             </p>
           )}
           <ul className="space-y-4">
-            {pools.map((pool) =>
-              pool.source === "api" ? (
-                <li
-                  key={pool.id}
-                  className="rounded-lg border border-border bg-background/50 p-4"
-                >
+          {pools.map((pool) =>
+            pool.source === "api" ? (
+              <li
+                key={pool.id}
+                className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40 hover:bg-muted/20"
+              >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-semibold text-foreground">
                       {pool.pair.replace("-", " / ")}
@@ -518,7 +429,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
               ) : pool.source === "subgraph" ? (
                 <li
                   key={pool.id}
-                  className="rounded-lg border border-border bg-background/50 p-4"
+                  className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40 hover:bg-muted/20"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-semibold text-foreground">
@@ -575,7 +486,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
               ) : (
                 <li
                   key={pool.id}
-                  className="rounded-lg border border-border bg-background/50 p-4"
+                  className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40 hover:bg-muted/20"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-semibold text-foreground">{pool.symbol}</h3>
@@ -632,12 +543,12 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
           </ul>
         </section>
 
-        <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+        <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
           <p className="text-sm font-medium text-amber-200/90">
             Múltiplas redes (APIs públicas)
           </p>
           <p className="mt-1 text-xs text-amber-200/80">
-            Conecte a carteira para ver suas posições LP (RPC público + Dexscreener + DefiLlama). Sem conectar: lista de pools via yields.llama.fi/pools.
+            Selecione a rede acima para listar pools ou ver suas posições. Conecte a carteira no header para ver suas posições LP (RPC + Dexscreener + DefiLlama). Sem conectar: lista de pools via yields.llama.fi/pools.
           </p>
         </section>
       </div>

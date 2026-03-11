@@ -4,6 +4,7 @@ import "./globals.css";
 import { SerwistProvider } from "./serwist";
 import { AuthHeader } from "./components/auth-header";
 import { ValidacaoGuard } from "./components/validacao-guard";
+import { WalletProvider } from "./contexts/wallet-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,12 +46,14 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <SerwistProvider swUrl="/serwist/sw.js">
-          <AuthHeader />
-          <ValidacaoGuard>
-            <div className="flex h-screen flex-col overflow-hidden pt-14">
-              <main className="min-h-0 flex-1 overflow-auto">{children}</main>
-            </div>
-          </ValidacaoGuard>
+          <WalletProvider>
+            <AuthHeader />
+            <ValidacaoGuard>
+              <div className="flex h-screen flex-col overflow-hidden pt-12">
+                <main className="min-h-0 flex-1 overflow-auto">{children}</main>
+              </div>
+            </ValidacaoGuard>
+          </WalletProvider>
         </SerwistProvider>
       </body>
     </html>
