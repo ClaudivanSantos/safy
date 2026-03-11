@@ -1,7 +1,9 @@
 /**
- * Aave V3 - redes suportadas (seleção manual, sem conexão de carteira)
+ * Aave V3 - redes suportadas (conectar carteira, RPC público igual à tela de Pools)
  * https://aave.com/docs/aave-v3/smart-contracts/view-contracts
  */
+
+import { CHAINS } from "@/lib/chains";
 
 export type AaveNetworkId = "ethereum" | "polygon" | "arbitrum";
 
@@ -9,22 +11,22 @@ export type AaveNetworkConfig = {
   id: AaveNetworkId;
   name: string;
   chainId: number;
-  /** Múltiplos RPCs para fallback (evita CORS/falha de um único endpoint) */
+  /** RPCs: mesmo de lib/chains + fallbacks */
   rpcUrls: string[];
   poolAddress: `0x${string}`;
   poolAddressesProvider: `0x${string}`;
   uiPoolDataProvider: `0x${string}`;
 };
 
-/** Redes Aave V3 com endereços oficiais (checksum EIP-55 válido para viem) */
+/** Redes Aave V3 — RPC alinhado a lib/chains (Pools) */
 export const AAVE_NETWORKS: Record<AaveNetworkId, AaveNetworkConfig> = {
   ethereum: {
     id: "ethereum",
     name: "Ethereum",
     chainId: 1,
     rpcUrls: [
+      CHAINS.ethereum.rpc,
       "https://cloudflare-eth.com",
-      "https://rpc.ankr.com/eth",
       "https://ethereum.publicnode.com",
       "https://eth.llamarpc.com",
     ],
@@ -37,6 +39,7 @@ export const AAVE_NETWORKS: Record<AaveNetworkId, AaveNetworkConfig> = {
     name: "Polygon",
     chainId: 137,
     rpcUrls: [
+      CHAINS.polygon.rpc,
       "https://polygon-bor-rpc.publicnode.com",
       "https://rpc.ankr.com/polygon",
       "https://polygon.llamarpc.com",
@@ -50,8 +53,8 @@ export const AAVE_NETWORKS: Record<AaveNetworkId, AaveNetworkConfig> = {
     name: "Arbitrum One",
     chainId: 42161,
     rpcUrls: [
+      CHAINS.arbitrum.rpc,
       "https://rpc.ankr.com/arbitrum",
-      "https://arb1.arbitrum.io/rpc",
       "https://arbitrum-one-rpc.publicnode.com",
     ],
     poolAddress: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",

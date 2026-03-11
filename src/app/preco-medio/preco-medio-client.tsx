@@ -43,11 +43,11 @@ function getFieldValue(target: unknown): string {
   return (target as { value: string }).value;
 }
 
-function formatDate(d: Date) {
-  return new Date(d).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  });
+/** Formata data de forma consistente entre servidor e cliente (evita hydration mismatch). */
+function formatDate(d: Date | string) {
+  const s = typeof d === "string" ? d : new Date(d).toISOString();
+  const [, month, day] = s.slice(0, 10).split("-");
+  return `${day}/${month}`;
 }
 
 export default function PrecoMedioClient({
@@ -175,7 +175,7 @@ export default function PrecoMedioClient({
 
   const exportRows = purchases.map((p) => ({
     Moeda: p.currency,
-    Data: new Date(p.created_at).toLocaleDateString("pt-BR"),
+    Data: formatDate(p.created_at),
     "Preço (USD)": p.preco,
     Quantidade: p.quantidade,
     "Total (USD)": Math.round(p.preco * p.quantidade * 100) / 100,

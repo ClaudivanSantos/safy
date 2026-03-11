@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createPublicClient, http, fallback, formatUnits, isAddress, encodeFunctionData, decodeAbiParameters, type Chain } from "viem";
 import { mainnet, polygon, arbitrum } from "viem/chains";
+import { BrowserProvider } from "ethers";
 import {
   AAVE_NETWORKS,
   AAVE_NETWORK_IDS,
@@ -11,6 +12,32 @@ import {
   POOL_ABI,
   UI_POOL_DATA_PROVIDER_ABI,
 } from "./aave-config";
+
+const WALLET_STORAGE_KEY = "safy-aave-wallet";
+
+function getStoredWallet(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const s = sessionStorage.getItem(WALLET_STORAGE_KEY);
+    return s && isAddress(s) ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredWallet(address: string | null): void {
+  try {
+    if (address) sessionStorage.setItem(WALLET_STORAGE_KEY, address);
+    else sessionStorage.removeItem(WALLET_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function shortAddress(addr: string): string {
+  if (addr.length < 10) return addr;
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
 
 const RAY = BigInt(10) ** BigInt(27);
 const WAD = BigInt(10) ** BigInt(18);
@@ -151,13 +178,52 @@ function getLiquidationData(account: UserAccountData) {
 export default function SaudeDefiClient({ initialAddress }: { initialAddress?: string } = {}) {
   const [selectedNetworkId, setSelectedNetworkId] =
     useState<AaveNetworkId>("ethereum");
-  const [address, setAddress] = useState(initialAddress ?? "");
+  const [connectedAddress, setConnectedAddress] = useState<string | null>(() =>
+    typeof window !== "undefined" ? getStoredWallet() : null
+  );
+  const [connecting, setConnecting] = useState(false);
   const [liquidationMode, setLiquidationMode] = useState<"coupled" | "single-asset">("coupled");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountData, setAccountData] = useState<UserAccountData | null>(null);
   const [collaterals, setCollaterals] = useState<CollateralRow[]>([]);
   const [debts, setDebts] = useState<DebtRow[]>([]);
+
+  const connectWallet = useCallback(async () => {
+    const eth = (typeof window !== "undefined" && (window as unknown as { ethereum?: unknown }).ethereum) as
+      | { request: (args: { method: string }) => Promise<string[]> }
+      | undefined;
+    if (!eth) {
+      setError("Nenhuma carteira encontrada. Instale MetaMask ou outra extensão compatível.");
+      return;
+    }
+    setConnecting(true);
+    setError(null);
+    try {
+      const provider = new BrowserProvider(eth);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const account = accounts?.[0];
+      if (account && isAddress(account)) {
+        setConnectedAddress(account);
+        setStoredWallet(account);
+      } else {
+        setError("Nenhuma conta retornada.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao conectar carteira.");
+    } finally {
+      setConnecting(false);
+    }
+  }, []);
+
+  const disconnectWallet = useCallback(() => {
+    setConnectedAddress(null);
+    setStoredWallet(null);
+    setAccountData(null);
+    setCollaterals([]);
+    setDebts([]);
+    setError(null);
+  }, []);
 
   const fetchAaveData = useCallback(
     async (network: AaveNetworkConfig, userAddress: `0x${string}`) => {
@@ -294,12 +360,11 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
 
   const handleVerificar = async () => {
     setError(null);
-    const trimmed = address.trim();
-    if (!trimmed) {
-      setError("Informe um endereço (0x...).");
+    if (!connectedAddress) {
+      setError("Conecte a carteira para verificar sua posição na Aave.");
       return;
     }
-    if (!isAddress(trimmed)) {
+    if (!isAddress(connectedAddress)) {
       setError("Endereço inválido.");
       return;
     }
@@ -307,7 +372,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
     const network = AAVE_NETWORKS[selectedNetworkId];
     setLoading(true);
     try {
-      await fetchAaveData(network, trimmed as `0x${string}`);
+      await fetchAaveData(network, connectedAddress as `0x${string}`);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "Erro ao buscar dados na Aave.";
@@ -321,9 +386,15 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
   };
 
   useEffect(() => {
+    const stored = getStoredWallet();
+    if (stored) setConnectedAddress(stored);
+  }, []);
+
+  useEffect(() => {
     const addr = (initialAddress ?? "").trim();
     if (!addr || !isAddress(addr)) return;
-    setAddress(addr);
+    setConnectedAddress(addr);
+    setStoredWallet(addr);
     const network = AAVE_NETWORKS[selectedNetworkId];
     setLoading(true);
     setError(null);
@@ -388,35 +459,45 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                 ))}
               </select>
             </div>
-            <div className="flex min-w-[200px] flex-1 flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground/70">
-                Endereço da carteira
-              </label>
-              <input
-                type="text"
-                placeholder="0x..."
-                value={address}
-                onChange={(e) => {
-                  setAddress(
-                    (e.currentTarget as unknown as { value: string }).value ?? ""
-                  );
-                  setError(null);
-                }}
-                className="rounded-lg border border-border bg-background px-3 py-2.5 font-mono text-sm text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+            <div className="flex flex-wrap items-center gap-2">
+              {connectedAddress ? (
+                <>
+                  <span
+                    className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 font-mono text-sm text-foreground"
+                    title={connectedAddress}
+                  >
+                    {shortAddress(connectedAddress)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={disconnectWallet}
+                    className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    Desconectar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleVerificar}
+                    disabled={loading}
+                    className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
+                  >
+                    {loading ? "Buscando…" : "Verificar"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={connectWallet}
+                  disabled={connecting}
+                  className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {connecting ? "Conectando…" : "Conectar carteira"}
+                </button>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={handleVerificar}
-              disabled={loading}
-              className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
-            >
-              {loading ? "Buscando…" : "Verificar"}
-            </button>
           </div>
           <p className="mt-2 text-xs text-foreground/60">
-            Selecione a rede e informe o endereço. Os dados serão buscados na
-            Aave V3 dessa rede (sem conectar carteira).
+            Conecte a carteira e selecione a rede. Os dados são buscados na Aave V3 via RPC público (mesma base da tela de Pools).
           </p>
         </section>
 
@@ -509,7 +590,9 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                         colSpan={3}
                         className="py-4 text-center text-foreground/50"
                       >
-                        Nenhum colateral. Verifique um endereço.
+                        {connectedAddress
+                          ? "Nenhum colateral nesta rede. Conecte e clique em Verificar."
+                          : "Conecte a carteira e clique em Verificar."}
                       </td>
                     </tr>
                   )}
@@ -548,7 +631,9 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                         colSpan={3}
                         className="py-4 text-center text-foreground/50"
                       >
-                        Nenhum empréstimo. Verifique um endereço.
+                        {connectedAddress
+                          ? "Nenhum empréstimo nesta rede. Conecte e clique em Verificar."
+                          : "Conecte a carteira e clique em Verificar."}
                       </td>
                     </tr>
                   )}
@@ -666,8 +751,9 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                 </p>
                 <p className="mt-1 text-lg font-semibold text-foreground">—</p>
                 <p className="mt-1 text-xs text-foreground/60">
-                  Verifique um endereço com colateral e dívida para ver o preço
-                  de liquidação.
+                  {connectedAddress
+                    ? "Verifique um endereço com colateral e dívida para ver o preço de liquidação."
+                    : "Conecte a carteira e verifique para ver o preço de liquidação."}
                 </p>
               </div>
             )}
