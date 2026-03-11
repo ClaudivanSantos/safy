@@ -116,6 +116,51 @@ export default function InicioClient() {
           </div>
         )}
 
+        {/* Preços das principais moedas — TradingView + CoinGecko */}
+        <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
+            Preços das principais moedas
+          </h2>
+          <p className="mb-4 text-sm text-foreground/60">
+            Cotações em tempo real (TradingView). Dados de terceiros.
+          </p>
+          <div className="space-y-6">
+            {/* TradingView Ticker Tape */}
+            <div className="overflow-hidden rounded-lg border border-border">
+              <iframe
+                title="TradingView Ticker Tape — criptomoedas"
+                src={
+                  "https://s.tradingview.com/embed-widget/ticker-tape/?locale=pt#" +
+                  encodeURIComponent(
+                    JSON.stringify({
+                      symbols: [
+                        { description: "Bitcoin", proName: "BINANCE:BTCUSDT" },
+                        { description: "Ethereum", proName: "BINANCE:ETHUSDT" },
+                        { description: "BNB", proName: "BINANCE:BNBUSDT" },
+                        { description: "Solana", proName: "BINANCE:SOLUSDT" },
+                        { description: "XRP", proName: "BINANCE:XRPUSDT" },
+                        { description: "Cardano", proName: "BINANCE:ADAUSDT" },
+                        { description: "Dogecoin", proName: "BINANCE:DOGEUSDT" },
+                        { description: "Avalanche", proName: "BINANCE:AVAXUSDT" },
+                        { description: "Polygon", proName: "BINANCE:MATICUSDT" },
+                        { description: "Uniswap", proName: "BINANCE:UNIUSDT" },
+                        { description: "Chainlink", proName: "BINANCE:LINKUSDT" },
+                      ],
+                      showSymbolLogo: true,
+                      colorTheme: "dark",
+                      isTransparent: true,
+                      displayMode: "adaptive",
+                      largeChartUrl: "",
+                    })
+                  )
+                }
+                style={{ height: 46, width: "100%" }}
+                className="block border-0"
+              />
+            </div>
+          </div>
+        </section>
+
         {/* Total Value Locked in DeFi */}
         <section className="rounded-xl border border-border bg-muted/20 p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
@@ -155,7 +200,7 @@ export default function InicioClient() {
                       border: "1px solid #3f3f46",
                       borderRadius: "8px",
                     }}
-                    formatter={(value: number) => [formatTvl(value), "TVL"]}
+                    formatter={(value) => [formatTvl(Number(value ?? 0)), "TVL"]}
                     labelFormatter={(label) => label}
                   />
                   <Bar dataKey="tvl" fill="#22c55e" radius={[4, 4, 0, 0]} name="TVL" />
