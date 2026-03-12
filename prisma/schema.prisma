@@ -26,6 +26,11 @@ model User {
   validado      Boolean        @default(false)
   created_at    DateTime       @default(now()) @db.Timestamptz(6)
 
+  // Integrações e premium
+  wallet_address     String?
+  telegram_chat_id   String?        
+  premium_expires_at DateTime?      @db.Timestamptz(6)
+
   wallets   Wallet[]
   settings  UserSettings?
   purchases Purchase[]
