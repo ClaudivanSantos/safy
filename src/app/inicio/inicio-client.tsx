@@ -106,7 +106,7 @@ export default function InicioClient() {
             Dashboard DeFi
           </h1>
           <p className="relative mt-2 text-foreground/70">
-            Visão geral do ecossistema — TVL total, chains, protocolos e distribuição. Dados via DefiLlama.
+            Visão geral do ecossistema — TVL total, chains, protocolos e distribuição.
           </p>
         </header>
 
@@ -174,7 +174,7 @@ export default function InicioClient() {
             </p>
           )}
           <p className="mt-1 text-sm text-foreground/60">
-            Soma do TVL em todas as chains (DefiLlama).
+            Soma do TVL em todas as chains.
           </p>
           {!loading && topChainsForChart.length > 0 && (
             <div className="mt-6 h-64 w-full">
