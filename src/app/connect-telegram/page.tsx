@@ -2,17 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-
-type ConnectTelegramPageProps = {
-  searchParams: { chat_id?: string };
-};
+import { useSearchParams } from "next/navigation";
 
 type ApiResponse = { message?: string; error?: string };
 
-export default function ConnectTelegramPage({
-  searchParams,
-}: ConnectTelegramPageProps) {
-  const chatId = (searchParams.chat_id ?? "").trim();
+export default function ConnectTelegramPage() {
+  const searchParams = useSearchParams();
+  const chatId = (searchParams.get("chat_id") ?? "").trim();
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
