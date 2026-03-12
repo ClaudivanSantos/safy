@@ -21,7 +21,7 @@ export async function AuthHeader() {
         <HeaderNav />
         <Link href="/" className="order-2 flex shrink-0 items-center md:order-1">
           <Image
-            src="/logo.png"
+            src="/icon.png"
             alt="Safy"
             width={120}
             height={120}
