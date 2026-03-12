@@ -12,7 +12,7 @@ export default async function LoginPage({
     <div className="flex min-h-screen flex-col items-center justify-center px-4">
       <main className="w-full max-w-sm space-y-8">
         <div className="text-center">
-        <Image src="/logo.png" alt="Safy" width={300} height={300} className="mx-auto block rounded" />
+        <Image src="/logo.png" alt="Safy" width={150} height={150} className="mx-auto block rounded" />
           <p className="mt-2 text-sm text-foreground/70">
             Entre com nome de usuário e senha. Ao criar conta, guarde o token para recuperação.
           </p>
