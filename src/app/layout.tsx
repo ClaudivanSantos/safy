@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   applicationName: "Safy",
   icons: {
     icon: "/logo.png",
+    apple: "/logo.png",
   },
   appleWebApp: {
     capable: true,

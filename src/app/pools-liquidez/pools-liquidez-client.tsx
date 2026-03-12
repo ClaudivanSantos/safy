@@ -6,62 +6,12 @@ import { useWallet } from "@/app/contexts/wallet-context";
 import {
   POOL_NETWORKS,
   POOL_NETWORK_IDS,
-  POOL_PROTOCOL_IDS,
-  POOLS_SUBGRAPH_API,
   POOLS_API,
-  LLAMA_YIELDS_POOLS_API,
   type PoolNetworkId,
-  type PoolProtocolVersion,
-  getProtocolLabel,
   getKrystalLiquidityUrl,
-  getDexLiquidityUrl,
 } from "./pools-config";
 
-/** Item de pool retornado pela API Llama yields.llama.fi/pools */
-type LlamaPoolItem = {
-  chain: string;
-  project: string;
-  symbol: string;
-  tvlUsd: number | null;
-  apy: number | null;
-  apyBase: number | null;
-  apyReward: number | null;
-  pool: string;
-  ilRisk?: string | null;
-  poolMeta?: string | null;
-};
-
-/** Linha de pool quando a lista vem da API interna (posições da carteira). */
-type SubgraphPoolRow = {
-  source: "subgraph";
-  id: string;
-  protocol: PoolProtocolVersion;
-  pairAddress: string;
-  token0Symbol: string;
-  token1Symbol: string;
-  valorDepositadoUsd: string | null;
-  plEstimado: string | null;
-  ilAproximado: string | null;
-  feesEstimadas: string | null;
-  share: number;
-};
-
-/** Linha de pool quando a lista vem da Llama (catálogo global). */
-type LlamaPoolRow = {
-  source: "llama";
-  id: string;
-  chain: string;
-  project: string;
-  symbol: string;
-  tvlUsd: number | null;
-  apy: number | null;
-  apyBase: number | null;
-  apyReward: number | null;
-  ilRisk: string | null;
-  poolMeta: string | null;
-};
-
-/** Linha de pool quando a lista vem da API multi-chain GET /api/pools. */
+/** Item de pool retornado pela API interna /api/pools (posições da carteira). */
 type ApiPoolRow = {
   source: "api";
   id: string;
@@ -73,16 +23,6 @@ type ApiPoolRow = {
   volume24h: number;
   apy: number | null;
   valueUsd: number;
-};
-
-type PoolRow = SubgraphPoolRow | LlamaPoolRow | ApiPoolRow;
-
-/** Nome da chain na API Llama. */
-const NETWORK_TO_LLAMA_CHAIN: Record<PoolNetworkId, string> = {
-  ethereum: "Ethereum",
-  bsc: "BSC",
-  polygon: "Polygon",
-  arbitrum: "Arbitrum",
 };
 
 function formatUsd(value: number | string | null): string {
@@ -108,142 +48,71 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
   const { address: contextAddress } = useWallet();
   const connectedAddress = contextAddress ?? (initialAddress && isAddress(initialAddress) ? initialAddress : null);
 
-  const [selectedNetworkId, setSelectedNetworkId] = useState<PoolNetworkId>("ethereum");
-  const [selectedProtocol, setSelectedProtocol] = useState<PoolProtocolVersion>("v3");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pools, setPools] = useState<PoolRow[]>([]);
-  const [poolsSource, setPoolsSource] = useState<"subgraph" | "llama" | "api" | null>(null);
-
-  const network = POOL_NETWORKS[selectedNetworkId];
-  const networkEnabled = network.subgraphEnabled;
-
-  /** Multi-chain: GET /api/pools?wallet=&chain= (Dexscreener + DefiLlama + RPC). */
-  const fetchByApiPools = useCallback(
-    async (userAddress: string) => {
-      const res = await fetch(
-        `${POOLS_API}?wallet=${encodeURIComponent(userAddress)}&chain=${encodeURIComponent(selectedNetworkId)}`
-      );
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? `Erro ${res.status}`);
-      }
-      const data = (await res.json()) as Array<{
-        chain: string;
-        protocol: string;
-        pair: string;
-        priceUsd: number;
-        liquidityUsd: number;
-        volume24h: number;
-        apy: number | null;
-        valueUsd: number;
-      }>;
-      const rows: ApiPoolRow[] = Array.isArray(data)
-        ? data.map((p, i) => ({
-            source: "api" as const,
-            id: `${p.chain}-${p.pair}-${i}`,
-            chain: p.chain,
-            protocol: p.protocol,
-            pair: p.pair,
-            priceUsd: p.priceUsd,
-            liquidityUsd: p.liquidityUsd,
-            volume24h: p.volume24h,
-            apy: p.apy,
-            valueUsd: p.valueUsd,
-          }))
-        : [];
-      setPools(rows);
-      setPoolsSource("api");
-    },
-    [selectedNetworkId]
-  );
-
-  const fetchByWallet = useCallback(
-    async (userAddress: string) => {
-      if (!networkEnabled) {
-        throw new Error("Para filtrar por carteira, use a rede Ethereum (única com suporte no momento).");
-      }
-      const res = await fetch(POOLS_SUBGRAPH_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          networkId: selectedNetworkId,
-          protocolVersion: selectedProtocol,
-          address: userAddress.toLowerCase(),
-        }),
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        pools?: SubgraphPoolRow[];
-        errors?: { message: string }[];
-      };
-      if (!res.ok || json.errors?.length) {
-        const msg = json.errors?.[0]?.message ?? `Erro ${res.status}`;
-        throw new Error(msg);
-      }
-      const rows = (json.pools ?? []).map((p) => ({ ...p, source: "subgraph" as const }));
-      setPools(rows);
-      setPoolsSource("subgraph");
-    },
-    [selectedNetworkId, selectedProtocol, networkEnabled]
-  );
-
-  const fetchByLlama = useCallback(async () => {
-    const res = await fetch(LLAMA_YIELDS_POOLS_API);
-    const json = (await res.json().catch(() => ({}))) as {
-      status?: string;
-      data?: LlamaPoolItem[];
-    };
-    if (!res.ok || json.status !== "success" || !Array.isArray(json.data)) {
-      throw new Error("Resposta inválida da API Llama.");
-    }
-    const chainName = NETWORK_TO_LLAMA_CHAIN[selectedNetworkId];
-    const rows: LlamaPoolRow[] = json.data
-      .filter((p) => p.chain === chainName)
-      .slice(0, 100)
-      .map((p) => ({
-        source: "llama" as const,
-        id: p.pool,
-        chain: p.chain,
-        project: p.project,
-        symbol: p.symbol,
-        tvlUsd: p.tvlUsd ?? null,
-        apy: p.apy ?? null,
-        apyBase: p.apyBase ?? null,
-        apyReward: p.apyReward ?? null,
-        ilRisk: p.ilRisk ?? null,
-        poolMeta: p.poolMeta ?? null,
-      }));
-    setPools(rows);
-    setPoolsSource("llama");
-  }, [selectedNetworkId]);
+  /** Por rede: lista de pools da carteira. null = ainda não consultado. */
+  const [resultsByChain, setResultsByChain] = useState<Record<PoolNetworkId, ApiPoolRow[] | null>>({
+    ethereum: null,
+    bsc: null,
+    polygon: null,
+    arbitrum: null,
+  });
 
   const handleVerificar = async () => {
     setError(null);
-
-    if (connectedAddress) {
-      setLoading(true);
-      try {
-        await fetchByApiPools(connectedAddress);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao buscar posições.");
-        setPools([]);
-        setPoolsSource(null);
-      } finally {
-        setLoading(false);
-        return;
-      }
+    if (!connectedAddress) {
+      setError("Conecte a carteira no header para ver suas posições em todas as redes.");
+      return;
     }
 
     setLoading(true);
-    try {
-      await fetchByLlama();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao buscar pools.");
-      setPools([]);
-      setPoolsSource(null);
-    } finally {
-      setLoading(false);
-    }
+    const next: Record<PoolNetworkId, ApiPoolRow[] | null> = {
+      ethereum: null,
+      bsc: null,
+      polygon: null,
+      arbitrum: null,
+    };
+    await Promise.all(
+      POOL_NETWORK_IDS.map(async (chainId) => {
+        try {
+          const res = await fetch(
+            `${POOLS_API}?wallet=${encodeURIComponent(connectedAddress)}&chain=${encodeURIComponent(chainId)}`
+          );
+          if (!res.ok) {
+            const err = (await res.json().catch(() => ({}))) as { error?: string };
+            throw new Error(err.error ?? `Erro ${res.status}`);
+          }
+          const data = (await res.json()) as Array<{
+            chain: string;
+            protocol: string;
+            pair: string;
+            priceUsd: number;
+            liquidityUsd: number;
+            volume24h: number;
+            apy: number | null;
+            valueUsd: number;
+          }>;
+          next[chainId] = Array.isArray(data)
+            ? data.map((p, i) => ({
+                source: "api" as const,
+                id: `${p.chain}-${p.pair}-${i}`,
+                chain: p.chain,
+                protocol: p.protocol,
+                pair: p.pair,
+                priceUsd: p.priceUsd,
+                liquidityUsd: p.liquidityUsd,
+                volume24h: p.volume24h,
+                apy: p.apy,
+                valueUsd: p.valueUsd,
+              }))
+            : [];
+        } catch {
+          next[chainId] = [];
+        }
+      })
+    );
+    setResultsByChain(next);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -251,14 +120,51 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
     if (!addr || !isAddress(addr)) return;
     setLoading(true);
     setError(null);
-    fetchByApiPools(addr)
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Erro ao buscar posições.");
-        setPools([]);
-        setPoolsSource(null);
+    const next: Record<PoolNetworkId, ApiPoolRow[] | null> = {
+      ethereum: null,
+      bsc: null,
+      polygon: null,
+      arbitrum: null,
+    };
+    Promise.all(
+      POOL_NETWORK_IDS.map(async (chainId) => {
+        try {
+          const res = await fetch(
+            `${POOLS_API}?wallet=${encodeURIComponent(addr)}&chain=${encodeURIComponent(chainId)}`
+          );
+          if (!res.ok) return;
+          const data = (await res.json()) as Array<{
+            chain: string;
+            protocol: string;
+            pair: string;
+            priceUsd: number;
+            liquidityUsd: number;
+            volume24h: number;
+            apy: number | null;
+            valueUsd: number;
+          }>;
+          next[chainId] = Array.isArray(data)
+            ? data.map((p, i) => ({
+                source: "api" as const,
+                id: `${p.chain}-${p.pair}-${i}`,
+                chain: p.chain,
+                protocol: p.protocol,
+                pair: p.pair,
+                priceUsd: p.priceUsd,
+                liquidityUsd: p.liquidityUsd,
+                volume24h: p.volume24h,
+                apy: p.apy,
+                valueUsd: p.valueUsd,
+              }))
+            : [];
+        } catch {
+          next[chainId] = [];
+        }
       })
-      .finally(() => setLoading(false));
-    // Só dispara quando a página carrega com endereço na URL
+    ).then(() => {
+      setResultsByChain(next);
+      setLoading(false);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAddress]);
 
@@ -272,283 +178,124 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
             Pools de Liquidez
           </h1>
           <p className="relative mt-2 text-foreground/70">
-            Conecte a carteira no header para ver suas posições LP em Ethereum, BNB Chain, Polygon ou Arbitrum. Selecione a rede abaixo para listar pools ou carregar dados da Aave via Llama.
+            Conecte a carteira no header e clique em Ver minhas posições. Consultamos Ethereum, BNB Chain, Polygon e Arbitrum via RPC; redes sem posição exibem &quot;Nenhuma posição nesta rede&quot;.
           </p>
         </header>
 
         <section className="rounded-xl border border-border bg-muted/20 p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Filtros
+            Minhas posições
           </h2>
           {error && (
             <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
               {error}
             </div>
           )}
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground/70">
-                Rede
-              </label>
-              <select
-                value={selectedNetworkId}
-                onChange={(e) => {
-                  const value = (e.target as { value?: string }).value;
-                  if (value) setSelectedNetworkId(value as PoolNetworkId);
-                  setError(null);
-                  setPools([]);
-                  setPoolsSource(null);
-                }}
-                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                {POOL_NETWORK_IDS.map((id) => (
-                  <option key={id} value={id}>
-                    {POOL_NETWORKS[id].name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-foreground/70">
-                Protocolo
-              </label>
-              <select
-                value={selectedProtocol}
-                onChange={(e) => {
-                  const value = (e.target as { value?: string }).value;
-                  if (value) setSelectedProtocol(value as PoolProtocolVersion);
-                  setError(null);
-                  setPools([]);
-                  setPoolsSource(null);
-                }}
-                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                {POOL_PROTOCOL_IDS.map((protocol) => (
-                  <option key={protocol} value={protocol}>
-                    {getProtocolLabel(protocol)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {connectedAddress ? (
+          <div className="flex flex-wrap items-center gap-4">
+            {connectedAddress ? (
+              <>
                 <span
                   className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 font-mono text-sm text-foreground"
                   title={connectedAddress}
                 >
                   {connectedAddress.slice(0, 6)}…{connectedAddress.slice(-4)}
                 </span>
-              ) : (
-                <p className="text-sm text-foreground/60">
-                  Conecte a carteira no header para ver suas posições.
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={handleVerificar}
-                disabled={loading}
-                className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
-              >
-                {connectedAddress
-                  ? (loading ? "Buscando…" : "Ver minhas posições")
-                  : (loading ? "Buscando…" : "Carregar pools da rede")}
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={handleVerificar}
+                  disabled={loading}
+                  className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {loading ? "Buscando em todas as redes…" : "Ver minhas posições em todas as redes"}
+                </button>
+              </>
+            ) : (
+              <p className="text-sm text-foreground/60">
+                Conecte a carteira no header para ver suas posições.
+              </p>
+            )}
           </div>
         </section>
 
-        <section className="rounded-xl border border-border bg-muted/20 p-6">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            {poolsSource === "subgraph"
-              ? "Minhas posições"
-              : poolsSource === "api"
-                ? "Minhas posições"
-                : poolsSource === "llama"
-                  ? "Pools da rede"
-                  : "Pools"}
-            {pools.length > 0 && ` (${pools.length})`}
-          </h2>
-          {pools.length === 0 && !loading && (
-            <p className="py-6 text-center text-sm text-foreground/50">
-              {connectedAddress
-                ? "Clique em \"Ver minhas posições\" para buscar suas posições LP nesta rede."
-                : "Conecte a carteira no header para ver suas posições ou clique em \"Carregar pools da rede\" para listar pools via Llama."}
-            </p>
-          )}
-          <ul className="space-y-4">
-          {pools.map((pool) =>
-            pool.source === "api" ? (
-              <li
-                key={pool.id}
-                className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40 hover:bg-muted/20"
-              >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="font-semibold text-foreground">
-                      {pool.pair.replace("-", " / ")}
-                    </h3>
-                    <span className="text-xs text-foreground/60">{pool.protocol}</span>
-                  </div>
-                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">Preço</span>
-                      <p className="font-medium text-foreground">
-                        ${Number(pool.priceUsd).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-                      </p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">Liquidez</span>
-                      <p className="font-medium text-foreground">{formatUsd(pool.liquidityUsd)}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">Volume 24h</span>
-                      <p className="font-medium text-foreground">{formatUsd(pool.volume24h)}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">APY</span>
-                      <p className="font-medium text-foreground">{formatApy(pool.apy)}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2 sm:col-span-2">
-                      <span className="text-foreground/60">Valor da posição</span>
-                      <p className="font-medium text-primary">
-                        {formatUsd(pool.valueUsd)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <a
-                      href={getKrystalLiquidityUrl(selectedNetworkId)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                    >
-                      Abrir na Krystal
-                      <ExternalLinkIcon />
-                    </a>
-                  </div>
-                </li>
-              ) : pool.source === "subgraph" ? (
-                <li
-                  key={pool.id}
-                  className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40 hover:bg-muted/20"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="font-semibold text-foreground">
-                      {pool.token0Symbol} / {pool.token1Symbol}
-                    </h3>
-                    <span className="text-xs text-foreground/60">
-                      {getProtocolLabel(pool.protocol)}
-                      {pool.protocol === "v2"
-                        ? ` - ${(pool.share * 100).toFixed(4)}% do pool`
-                        : ""}
-                    </span>
-                  </div>
-                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">Valor depositado</span>
-                      <p className="font-medium text-foreground">
-                        {pool.valorDepositadoUsd ? `$${formatUsd(pool.valorDepositadoUsd)}` : "—"}
-                      </p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">P/L estimado</span>
-                      <p className="font-medium text-foreground">{pool.plEstimado ?? "—"}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">IL aproximado</span>
-                      <p className="font-medium text-foreground">{pool.ilAproximado ?? "—"}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">Fees estimadas</span>
-                      <p className="font-medium text-foreground">{pool.feesEstimadas ?? "—"}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <a
-                      href={getKrystalLiquidityUrl(selectedNetworkId)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                    >
-                      Abrir na Krystal
-                      <ExternalLinkIcon />
-                    </a>
-                    <a
-                      href={getDexLiquidityUrl(selectedNetworkId, pool.protocol, pool.pairAddress)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-black hover:bg-primary-hover"
-                    >
-                      Abrir no DEX original
-                      <ExternalLinkIcon />
-                    </a>
-                  </div>
-                </li>
+        {/* Resultados por rede */}
+        {POOL_NETWORK_IDS.map((chainId) => {
+          const pools = resultsByChain[chainId];
+          const network = POOL_NETWORKS[chainId];
+          if (pools === null) return null;
+          return (
+            <section key={chainId} className="rounded-xl border border-border bg-muted/20 p-6">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
+                {network.name}
+                {pools.length > 0 && ` (${pools.length})`}
+              </h2>
+              {pools.length === 0 ? (
+                <p className="py-4 text-center text-sm text-foreground/50">
+                  Nenhuma posição nesta rede.
+                </p>
               ) : (
-                <li
-                  key={pool.id}
-                  className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40 hover:bg-muted/20"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="font-semibold text-foreground">{pool.symbol}</h3>
-                    <span className="text-xs text-foreground/60">
-                      {pool.project}
-                      {pool.poolMeta ? ` · ${pool.poolMeta}` : ""}
-                    </span>
-                  </div>
-                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">TVL</span>
-                      <p className="font-medium text-foreground">{formatUsd(pool.tvlUsd)}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">APY</span>
-                      <p className="font-medium text-foreground">{formatApy(pool.apy)}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">APY base</span>
-                      <p className="font-medium text-foreground">{formatApy(pool.apyBase)}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">APY recompensa</span>
-                      <p className="font-medium text-foreground">{formatApy(pool.apyReward)}</p>
-                    </div>
-                    <div className="rounded border border-border/50 bg-muted/20 p-2">
-                      <span className="text-foreground/60">Risco IL</span>
-                      <p className="font-medium text-foreground">{pool.ilRisk ?? "—"}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <a
-                      href="https://yields.llama.fi"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                <ul className="space-y-4">
+                  {pools.map((pool) => (
+                    <li
+                      key={pool.id}
+                      className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40 hover:bg-muted/20"
                     >
-                      Ver no Llama Yield
-                      <ExternalLinkIcon />
-                    </a>
-                    <a
-                      href={getKrystalLiquidityUrl(selectedNetworkId)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-black hover:bg-primary-hover"
-                    >
-                      Abrir na Krystal
-                      <ExternalLinkIcon />
-                    </a>
-                  </div>
-                </li>
-              )
-            )}
-          </ul>
-        </section>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="font-semibold text-foreground">
+                          {pool.pair.replace("-", " / ")}
+                        </h3>
+                        <span className="text-xs text-foreground/60">{pool.protocol}</span>
+                      </div>
+                      <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                        <div className="rounded border border-border/50 bg-muted/20 p-2">
+                          <span className="text-foreground/60">Preço</span>
+                          <p className="font-medium text-foreground">
+                            ${Number(pool.priceUsd).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                          </p>
+                        </div>
+                        <div className="rounded border border-border/50 bg-muted/20 p-2">
+                          <span className="text-foreground/60">Liquidez</span>
+                          <p className="font-medium text-foreground">{formatUsd(pool.liquidityUsd)}</p>
+                        </div>
+                        <div className="rounded border border-border/50 bg-muted/20 p-2">
+                          <span className="text-foreground/60">Volume 24h</span>
+                          <p className="font-medium text-foreground">{formatUsd(pool.volume24h)}</p>
+                        </div>
+                        <div className="rounded border border-border/50 bg-muted/20 p-2">
+                          <span className="text-foreground/60">APY</span>
+                          <p className="font-medium text-foreground">{formatApy(pool.apy)}</p>
+                        </div>
+                        <div className="rounded border border-border/50 bg-muted/20 p-2 sm:col-span-2">
+                          <span className="text-foreground/60">Valor da posição</span>
+                          <p className="font-medium text-primary">
+                            {formatUsd(pool.valueUsd)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <a
+                          href={getKrystalLiquidityUrl(chainId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                        >
+                          Abrir na Krystal
+                          <ExternalLinkIcon />
+                        </a>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
 
         <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
           <p className="text-sm font-medium text-amber-200/90">
-            Múltiplas redes (APIs públicas)
+            Múltiplas redes (RPC + Dexscreener + DefiLlama)
           </p>
           <p className="mt-1 text-xs text-amber-200/80">
-            Selecione a rede acima para listar pools ou ver suas posições. Conecte a carteira no header para ver suas posições LP (RPC + Dexscreener + DefiLlama). Sem conectar: lista de pools via yields.llama.fi/pools.
+            As posições são consultadas automaticamente em Ethereum, BNB Chain, Polygon e Arbitrum. Redes sem posição mostram &quot;Nenhuma posição nesta rede&quot;.
           </p>
         </section>
       </div>

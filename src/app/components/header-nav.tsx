@@ -34,7 +34,7 @@ export function HeaderNav() {
   return (
     <>
       {/* Desktop nav */}
-      <nav className="hidden items-center gap-0.5 md:flex md:gap-1">
+      <nav className="order-2 hidden shrink-0 items-center gap-0.5 md:flex md:gap-1">
         {LINKS.map(({ href, label }) => (
           <Link
             key={href}
@@ -47,7 +47,7 @@ export function HeaderNav() {
       </nav>
 
       {/* Mobile hamburger */}
-      <div className="flex md:hidden">
+      <div className="order-1 flex shrink-0 md:order-2 md:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen((o) => !o)}

@@ -21,7 +21,7 @@ export function HeaderRight({ session, userName }: HeaderRightProps) {
         <button
           type="button"
           onClick={() => setDonationOpen(true)}
-          className="rounded-md p-1.5 text-foreground/90 transition-colors hover:bg-muted hover:text-primary sm:px-2.5 sm:py-2"
+          className="rounded-md p-1.5 font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary sm:px-2.5 sm:py-2 sm:text-sm animate-[coffee-glow_2.5s_ease-in-out_infinite]"
           title="Apoiar o projeto"
         >
           <span className="sm:hidden">☕</span>

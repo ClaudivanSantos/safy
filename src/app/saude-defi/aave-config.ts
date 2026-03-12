@@ -46,7 +46,7 @@ export const AAVE_NETWORKS: Record<AaveNetworkId, AaveNetworkConfig> = {
     ],
     poolAddress: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
     poolAddressesProvider: "0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb",
-    uiPoolDataProvider: "0x8f1a406D28230F9436ffDA325dA797F431f7107c",
+    uiPoolDataProvider: "0xC69728f11E9E6127733751c8410432913123acf1",
   },
   arbitrum: {
     id: "arbitrum",
@@ -83,7 +83,7 @@ export const POOL_ABI = [
   },
 ] as const;
 
-/** ABI: UiPoolDataProvider.getUserReservesData */
+/** ABI: UiPoolDataProvider.getUserReservesData - ordem dos campos conforme deploy (em algumas redes scaledVariableDebt vem antes do bool). */
 export const UI_POOL_DATA_PROVIDER_ABI = [
   {
     name: "getUserReservesData",
@@ -100,8 +100,8 @@ export const UI_POOL_DATA_PROVIDER_ABI = [
         components: [
           { name: "underlyingAsset", type: "address" },
           { name: "scaledATokenBalance", type: "uint256" },
-          { name: "usageAsCollateralEnabledOnUser", type: "bool" },
           { name: "scaledVariableDebt", type: "uint256" },
+          { name: "usageAsCollateralEnabledOnUser", type: "bool" },
         ],
       },
       { name: "userEmodeCategoryId", type: "uint8" },

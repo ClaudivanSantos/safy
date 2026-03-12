@@ -35,6 +35,19 @@ const FEATURES = [
   },
 ];
 
+function ProtocolLogo({ name, color }: { name: string; color: string }) {
+  const initial = name.slice(0, 1);
+  return (
+    <div
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-md transition hover:scale-105"
+      style={{ backgroundColor: color }}
+      title={name}
+    >
+      {initial}
+    </div>
+  );
+}
+
 export function HomeClient() {
   const [donationOpen, setDonationOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -118,9 +131,6 @@ export function HomeClient() {
                     href={f.href}
                     className="group relative overflow-hidden rounded-xl border border-border bg-muted/20 p-6 transition hover:border-accent/40 hover:bg-muted/30"
                   >
-                    <div className="mb-3 text-2xl opacity-90 transition group-hover:scale-110" style={{ transitionDuration: "200ms" }}>
-                      {f.icon}
-                    </div>
                     <h3 className="font-semibold text-foreground group-hover:text-primary">
                       {f.title}
                     </h3>
@@ -144,6 +154,8 @@ export function HomeClient() {
                 Conecte sua carteira no header e explore o dashboard, pools e saúde Aave.
               </p>
             </section>
+
+
           </div>
         </main>
         <Footer onDonateClick={() => setDonationOpen(true)} />

@@ -3,8 +3,8 @@
  * Todas as APIs são públicas, sem API key.
  */
 
-const PROTOCOLS_URL = "https://api.llama.fi/protocols";
-const CHAINS_URL = "https://api.llama.fi/v2/chains";
+const PROTOCOLS_URL = process.env.LLAMA_PROTOCOLS_URL ?? "https://api.llama.fi/protocols";
+const CHAINS_URL = process.env.LLAMA_CHAINS_URL ?? "https://api.llama.fi/v2/chains";
 
 export type ProtocolOverview = {
   name: string;

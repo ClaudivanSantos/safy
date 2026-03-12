@@ -6,7 +6,6 @@ export function SignupForm() {
   const [state, setState] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -14,7 +13,6 @@ export function SignupForm() {
     setState(null);
     setLoading(true);
     const trimmedNome = nome.trim();
-    const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
     try {
@@ -23,8 +21,7 @@ export function SignupForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nome: trimmedNome,
-          email: trimmedEmail,
-          password: trimmedPassword,
+          senha: trimmedPassword,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -53,15 +50,16 @@ export function SignupForm() {
           htmlFor="nome"
           className="mb-1 block text-sm font-medium text-foreground"
         >
-          Nome
+          Nome de usuário
         </label>
         <input
           id="nome"
           name="nome"
           type="text"
           required
-          autoComplete="name"
-          placeholder="Seu nome"
+          autoComplete="username"
+          minLength={2}
+          placeholder="Seu nome de usuário"
           value={nome}
           onChange={(e) =>
             setNome((e.target as unknown as { value: string }).value)
@@ -69,28 +67,6 @@ export function SignupForm() {
           className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
-      <div>
-        <label
-          htmlFor="email"
-          className="mb-1 block text-sm font-medium text-foreground"
-        >
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="seu@email.com"
-          value={email}
-          onChange={(e) =>
-            setEmail((e.target as unknown as { value: string }).value)
-          }
-          className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        />
-      </div>
-
       <div>
         <label
           htmlFor="password"

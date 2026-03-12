@@ -24,3 +24,8 @@ body {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
+
+@keyframes coffee-glow {
+  0%, 100% { color: #22c55e; }
+  50% { color: #a855f7; }
+}

@@ -1,33 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createSession, COOKIE_NAME, COOKIE_OPTIONS } from "@/lib/auth";
-import { createHash } from "node:crypto";
-
-function hashKey(key: string): string {
-  const normalized = key.trim().replace(/\s+/g, "").replace(/-/g, "").toLowerCase();
-  return createHash("sha256").update(normalized, "utf8").digest("hex");
-}
+import { verifyPassword } from "@/lib/password";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const key = (body.key as string)?.trim();
-    if (!key) {
+    const nome = (body.nome as string)?.trim();
+    const senha = (body.senha as string) ?? (body.password as string) ?? "";
+
+    if (!nome) {
       return NextResponse.json(
-        { error: "Informe sua chave de acesso." },
+        { error: "Informe seu nome de usuário." },
         { status: 400 }
       );
     }
 
-    const keyHash = hashKey(key);
+    if (!senha) {
+      return NextResponse.json(
+        { error: "Informe sua senha." },
+        { status: 400 }
+      );
+    }
+
     const user = await prisma.user.findUnique({
-      where: { key_hash: keyHash },
-      select: { id: true },
+      where: { nome },
+      select: { id: true, password_hash: true },
     });
 
-    if (!user) {
+    if (!user || !user.password_hash) {
       return NextResponse.json(
-        { error: "Chave inválida. Verifique e tente novamente." },
+        { error: "Nome de usuário ou senha incorretos." },
+        { status: 401 }
+      );
+    }
+
+    const valid = await verifyPassword(senha, user.password_hash);
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Nome de usuário ou senha incorretos." },
         { status: 401 }
       );
     }

@@ -1,25 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 type Mode = "choose" | "create" | "enter";
 
-const KEY_REVEAL_DELAY_MS = 2200;
+const TOKEN_REVEAL_DELAY_MS = 2200;
+const inputClass =
+  "w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+const btnPrimary =
+  "rounded-lg bg-primary py-3 font-medium text-black hover:bg-primary-hover disabled:opacity-50";
+const btnSecondary = "rounded-lg border border-border bg-muted px-4 py-3 text-foreground hover:bg-muted/80";
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("choose");
   const [nome, setNome] = useState("");
-  const [key, setKey] = useState("");
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const [keyRevealed, setKeyRevealed] = useState(false);
+  const [senha, setSenha] = useState("");
+  const [createdToken, setCreatedToken] = useState<string | null>(null);
+  const [tokenRevealed, setTokenRevealed] = useState(false);
 
   useEffect(() => {
-    if (!createdKey) return;
-    const t = setTimeout(() => setKeyRevealed(true), KEY_REVEAL_DELAY_MS);
+    if (!createdToken) return;
+    const t = setTimeout(() => setTokenRevealed(true), TOKEN_REVEAL_DELAY_MS);
     return () => clearTimeout(t);
-  }, [createdKey]);
+  }, [createdToken]);
 
   async function handleCreateAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +35,7 @@ export function LoginForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome: nome.trim() }),
+        body: JSON.stringify({ nome: nome.trim(), senha }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -37,7 +43,7 @@ export function LoginForm() {
         setLoading(false);
         return;
       }
-      setCreatedKey(data.key);
+      setCreatedToken(data.recoveryToken ?? null);
       setLoading(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao criar conta.");
@@ -53,11 +59,11 @@ export function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: key.trim().replace(/\s+/g, "") }),
+        body: JSON.stringify({ nome: nome.trim(), senha }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Chave inválida.");
+        setError(data.error ?? "Erro ao entrar.");
         setLoading(false);
         return;
       }
@@ -69,39 +75,34 @@ export function LoginForm() {
     }
   }
 
-  if (createdKey) {
-    const copyKey = () => {
-      (navigator as { clipboard?: { writeText: (t: string) => Promise<void> } }).clipboard?.writeText(createdKey);
+  if (createdToken) {
+    const copyToken = () => {
+      (navigator as { clipboard?: { writeText: (t: string) => Promise<void> } }).clipboard?.writeText(createdToken);
     };
     return (
       <div className="space-y-4">
         <div className="rounded-lg border border-primary/40 bg-primary/10 p-4">
           <p className="mb-2 text-sm font-medium text-primary">
-            {keyRevealed
-              ? "Sua chave de acesso (guarde em lugar seguro):"
-              : "Conta criada. Sua chave está sendo preparada…"}
+            {tokenRevealed
+              ? "Seu token de recuperação (guarde para caso esqueça a senha):"
+              : "Conta criada. Seu token está sendo preparado…"}
           </p>
-          {keyRevealed ? (
+          {tokenRevealed ? (
             <>
-              <p className="break-all font-mono text-sm text-foreground">
-                {createdKey}
-              </p>
+              <p className="break-all font-mono text-sm text-foreground">{createdToken}</p>
               <p className="mt-3 text-xs text-foreground/70">
-                Você precisará desta chave para entrar no app. Ela não será
-                exibida novamente.
+                Use este token na opção &quot;Esqueci senha&quot; para redefinir sua senha. Ele não será exibido novamente.
               </p>
               <button
                 type="button"
-                onClick={copyKey}
+                onClick={copyToken}
                 className="mt-2 rounded border border-primary/50 bg-primary/20 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/30"
               >
-                Copiar chave
+                Copiar token
               </button>
             </>
           ) : (
-            <p className="text-sm text-foreground/70">
-              Em instantes sua chave aparecerá aqui. Guarde-a em lugar seguro.
-            </p>
+            <p className="text-sm text-foreground/70">Em instantes o token aparecerá aqui. Guarde-o em lugar seguro.</p>
           )}
         </div>
         <button
@@ -110,7 +111,7 @@ export function LoginForm() {
             const loc = (globalThis as { location?: { href: string } }).location;
             if (loc) loc.href = "/";
           }}
-          className="w-full rounded-lg bg-primary py-3 font-medium text-black hover:bg-primary-hover"
+          className={`w-full ${btnPrimary}`}
         >
           Ir para o app
         </button>
@@ -122,13 +123,9 @@ export function LoginForm() {
     return (
       <form onSubmit={handleCreateAccount} className="space-y-4">
         {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
-            {error}
-          </p>
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
         )}
-        <label className="block text-sm font-medium text-foreground/90">
-          Seu nome
-        </label>
+        <label className="block text-sm font-medium text-foreground/90">Nome de usuário</label>
         <input
           type="text"
           required
@@ -136,21 +133,32 @@ export function LoginForm() {
           placeholder="Como quer ser chamado"
           value={nome}
           onChange={(e) => setNome((e.target as unknown as { value: string }).value)}
-          className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className={inputClass}
+        />
+        <label className="block text-sm font-medium text-foreground/90">Senha</label>
+        <input
+          type="password"
+          required
+          minLength={6}
+          placeholder="Mínimo 6 caracteres"
+          value={senha}
+          onChange={(e) => setSenha((e.target as unknown as { value: string }).value)}
+          className={inputClass}
         />
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => { setMode("choose"); setError(null); setNome(""); }}
-            className="rounded-lg border border-border bg-muted px-4 py-3 text-foreground hover:bg-muted/80"
+            onClick={() => {
+              setMode("choose");
+              setError(null);
+              setNome("");
+              setSenha("");
+            }}
+            className={btnSecondary}
           >
             Voltar
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 rounded-lg bg-primary py-3 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className={`flex-1 ${btnPrimary}`}>
             {loading ? "Criando..." : "Criar conta"}
           </button>
         </div>
@@ -162,34 +170,40 @@ export function LoginForm() {
     return (
       <form onSubmit={handleLogin} className="space-y-4">
         {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
-            {error}
-          </p>
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
         )}
-        <label className="block text-sm font-medium text-foreground/90">
-          Chave de acesso
-        </label>
+        <label className="block text-sm font-medium text-foreground/90">Nome de usuário</label>
+        <input
+          type="text"
+          required
+          placeholder="Seu nome de usuário"
+          value={nome}
+          onChange={(e) => setNome((e.target as unknown as { value: string }).value)}
+          className={inputClass}
+        />
+        <label className="block text-sm font-medium text-foreground/90">Senha</label>
         <input
           type="password"
           required
-          placeholder="Cole sua chave aqui"
-          value={key}
-          onChange={(e) => setKey((e.target as unknown as { value: string }).value)}
-          className="w-full rounded-lg border border-border bg-muted px-4 py-3 font-mono text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          placeholder="Sua senha"
+          value={senha}
+          onChange={(e) => setSenha((e.target as unknown as { value: string }).value)}
+          className={inputClass}
         />
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => { setMode("choose"); setError(null); setKey(""); }}
-            className="rounded-lg border border-border bg-muted px-4 py-3 text-foreground hover:bg-muted/80"
+            onClick={() => {
+              setMode("choose");
+              setError(null);
+              setNome("");
+              setSenha("");
+            }}
+            className={btnSecondary}
           >
             Voltar
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 rounded-lg bg-primary py-3 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className={`flex-1 ${btnPrimary}`}>
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </div>
@@ -200,24 +214,24 @@ export function LoginForm() {
   return (
     <div className="space-y-4">
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
-          {error}
-        </p>
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
       )}
       <button
         type="button"
         onClick={() => setMode("create")}
-        className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-black hover:bg-primary-hover"
+        className={`w-full ${btnPrimary} px-4`}
       >
-        Criar conta (só precisa do seu nome)
+        Criar conta (nome e senha)
       </button>
-      <button
-        type="button"
-        onClick={() => setMode("enter")}
-        className="w-full rounded-lg border border-border bg-muted px-4 py-3 font-medium text-foreground hover:bg-muted/80"
+      <button type="button" onClick={() => setMode("enter")} className={`w-full ${btnSecondary} px-4`}>
+        Já tenho conta — entrar
+      </button>
+      <Link
+        href="/esqueci-senha"
+        className="block w-full rounded-lg border border-border/60 px-4 py-3 text-center text-sm text-foreground/70 hover:bg-muted/50"
       >
-        Já tenho conta — entrar com minha chave
-      </button>
+        Esqueci minha senha
+      </Link>
     </div>
   );
 }

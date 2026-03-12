@@ -1,4 +1,4 @@
-const DEFILLAMA_POOLS_URL = "https://yields.llama.fi/pools";
+const DEFILLAMA_POOLS_URL = process.env.DEFILLAMA_POOLS_URL ?? "https://yields.llama.fi/pools";
 const CACHE_MS = 60 * 60 * 1000; // 1 hour
 
 let cache: { data: DefiLlamaPool[]; expires: number } | null = null;

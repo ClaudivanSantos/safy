@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Doc = {
   addEventListener: (type: string, handler: EventListener) => void;
@@ -26,6 +27,12 @@ export function DonationModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const copyToClipboard = useCallback(async (text: string) => {
     try {
       const nav = navigator as { clipboard?: { writeText: (t: string) => Promise<void> } };
@@ -61,9 +68,9 @@ export function DonationModal({
 
   if (!open) return null;
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-100 flex min-h-screen min-w-full items-center justify-center bg-black/70 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -112,6 +119,15 @@ export function DonationModal({
       </div>
     </div>
   );
+
+  if (mounted && typeof globalThis !== "undefined") {
+    const body = (globalThis as unknown as { document?: { body?: Element } }).document?.body;
+    if (body) {
+      return createPortal(modalContent, body);
+    }
+  }
+
+  return modalContent;
 }
 
 function DonationOption({

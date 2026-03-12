@@ -14,7 +14,7 @@ export default async function LoginPage({
         <div className="text-center">
         <Image src="/logo.png" alt="Safy" width={300} height={300} className="mx-auto block rounded" />
           <p className="mt-2 text-sm text-foreground/70">
-            Crie sua conta com seu nome e guarde a chave para entrar.
+            Entre com nome de usuário e senha. Ao criar conta, guarde o token para recuperação.
           </p>
         </div>
 

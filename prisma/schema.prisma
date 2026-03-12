@@ -15,8 +15,9 @@ datasource db {
 
 model User {
   id            String         @id @default(uuid()) @db.Uuid
-  nome          String         @default("")
-  key_hash      String?        @unique // Hash SHA-256 da chave de acesso (só a chave dá login)
+  nome          String         @unique @default("")
+  password_hash String?
+  key_hash      String?        @unique // Hash do token de recuperação (esqueci senha)
   nostr_pubkey  String?        @unique
   auth_id       String?        @unique
   email         String?        @unique

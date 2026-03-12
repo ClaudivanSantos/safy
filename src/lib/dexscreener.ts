@@ -1,6 +1,6 @@
 import { CHAINS, type ChainId } from "./chains";
 
-const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex/pairs";
+const DEXSCREENER_BASE = process.env.DEXSCREENER_BASE_URL ?? "https://api.dexscreener.com/latest/dex/pairs";
 const CACHE_MS = 5 * 60 * 1000; // 5 minutes
 
 const cache = new Map<string, { data: DexscreenerResult; expires: number }>();

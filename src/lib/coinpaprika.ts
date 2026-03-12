@@ -1,4 +1,4 @@
-const COINPAPRIKA_TICKERS_URL = "https://api.coinpaprika.com/v1/tickers";
+const COINPAPRIKA_TICKERS_URL = process.env.COINPAPRIKA_TICKERS_URL ?? "https://api.coinpaprika.com/v1/tickers";
 const CACHE_MS = 10 * 60 * 1000; // 10 minutes
 
 let cache: { data: Record<string, number>; expires: number } | null = null;

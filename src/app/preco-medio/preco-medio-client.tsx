@@ -226,13 +226,19 @@ export default function PrecoMedioClient({
 
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
-      <div className="mx-auto max-w-2xl space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-primary">Preço Médio</h1>
-          <p className="mt-0.5 text-sm text-foreground/70">
-            Acompanhe suas criptomoedas com gráficos e preço médio.
-          </p>
-        </div>
+      <div className="mx-auto max-w-5xl space-y-8">
+        {/* Hero */}
+        <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-6 text-center md:p-8">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
+          <div className="relative">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              Preço Médio
+            </h1>
+            <p className="mt-2 text-sm text-foreground/70 md:text-base">
+              Acompanhe suas criptomoedas com gráficos e preço médio.
+            </p>
+          </div>
+        </header>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
           {purchases.length > 0 && (
@@ -240,14 +246,14 @@ export default function PrecoMedioClient({
               <button
                 type="button"
                 onClick={exportToCSV}
-                className="rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                className="rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
                 Exportar CSV
               </button>
               <button
                 type="button"
                 onClick={exportToExcel}
-                className="rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                className="rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
                 Exportar Excel
               </button>
@@ -262,15 +268,15 @@ export default function PrecoMedioClient({
               setDataCompra(new Date().toISOString().slice(0, 10));
               setError(null);
             }}
-            className="rounded-lg bg-primary px-5 py-2.5 font-medium text-black transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-primary px-5 py-2.5 font-medium text-black transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             title={!isLoggedIn ? "Faça login para adicionar compras." : undefined}
           >
             Adicionar compra
           </button>
         </div>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-foreground/80">
+        <div className="rounded-xl border border-border bg-muted/20 p-6">
+          <label className="mb-2 block text-xs font-medium text-foreground/80">
             Criptomoeda
           </label>
           <select
@@ -289,7 +295,7 @@ export default function PrecoMedioClient({
         </div>
 
         {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
             {error}
           </div>
         )}
@@ -297,8 +303,8 @@ export default function PrecoMedioClient({
         {purchases.length > 0 && (
           <>
             {barData.length > 0 && (
-              <div className="rounded-lg border border-border bg-muted/30 p-4">
-                <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+              <section className="rounded-xl border border-border bg-muted/20 p-6">
+                <h2 className="mb-4 text-lg font-semibold text-foreground">
                   Total investido por moeda
                 </h2>
                 <ResponsiveContainer width="100%" height={220}>
@@ -333,12 +339,12 @@ export default function PrecoMedioClient({
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
+              </section>
             )}
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-foreground/90">
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground">
                   Entradas ({currency})
                 </h2>
                 {filtered.length > 0 && (
@@ -355,7 +361,7 @@ export default function PrecoMedioClient({
                 {filtered.map((ent) => (
                   <li
                     key={ent.id}
-                    className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm transition hover:border-accent/30"
                   >
                     <span className="text-foreground">
                       {ent.quantidade} {currency} × {usdFormatter.format(ent.preco)} ={" "}
@@ -372,11 +378,11 @@ export default function PrecoMedioClient({
                   </li>
                 ))}
               </ul>
-            </div>
+            </section>
 
             {chartData.length > 0 && (
-              <div className="rounded-lg border border-border bg-muted/30 p-4">
-                <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+              <section className="rounded-xl border border-border bg-muted/20 p-6">
+                <h2 className="mb-4 text-lg font-semibold text-foreground">
                   Evolução do preço médio ({currency})
                 </h2>
                 <ResponsiveContainer width="100%" height={240}>
@@ -417,25 +423,25 @@ export default function PrecoMedioClient({
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
+              </section>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-border bg-muted/50 p-4">
-                <p className="text-xs text-foreground/70">Total investido (USD)</p>
-                <p className="text-xl font-semibold text-foreground">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-border bg-muted/20 p-5 transition hover:border-accent/30">
+                <p className="text-xs font-medium uppercase tracking-wider text-foreground/60">Total investido (USD)</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">
                   {usdFormatter.format(totalInvestidoUsd)}
                 </p>
               </div>
-              <div className="rounded-lg border border-border bg-muted/50 p-4">
-                <p className="text-xs text-foreground/70">Preço médio</p>
-                <p className="text-xl font-semibold text-primary">
+              <div className="rounded-xl border border-border bg-muted/20 p-5 transition hover:border-accent/30">
+                <p className="text-xs font-medium uppercase tracking-wider text-foreground/60">Preço médio</p>
+                <p className="mt-1 text-2xl font-semibold text-primary">
                   {symbol} {precoMedio.toFixed(2)}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-muted/50 p-4">
+            <section className="rounded-xl border border-border bg-muted/20 p-6">
               <label
                 htmlFor="preco-atual"
                 className="mb-2 block text-xs font-medium text-foreground/80"
@@ -454,13 +460,13 @@ export default function PrecoMedioClient({
                 className="mb-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
               {plValor !== null && plPercent !== null && (
-                <div className="text-sm">
+                <div className="mt-3 text-sm">
                   <p className="text-foreground/70">P/L estimado</p>
                   <p
                     className={
                       plValor >= 0
-                        ? "text-lg font-semibold text-primary"
-                        : "text-lg font-semibold text-red-400"
+                        ? "text-xl font-semibold text-primary"
+                        : "text-xl font-semibold text-red-400"
                     }
                   >
                     {usdFormatter.format(plValor)} ({plPercent >= 0 ? "+" : ""}
@@ -468,12 +474,12 @@ export default function PrecoMedioClient({
                   </p>
                 </div>
               )}
-            </div>
+            </section>
           </>
         )}
 
         {purchases.length === 0 && (
-          <p className="text-center text-sm text-foreground/60">
+          <p className="rounded-xl border border-border bg-muted/20 py-12 text-center text-sm text-foreground/60">
             Clique em &quot;Adicionar compra&quot; para registrar suas compras e
             ver gráficos e preço médio.
           </p>
