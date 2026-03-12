@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/aave-monitor",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/daily-report",
+      "schedule": "0 22 * * *"
+    }
+  ]
+}
+
