@@ -59,10 +59,10 @@ export function HeaderNav() {
     <>
       {/* Desktop nav */}
       <nav className="order-2 hidden items-center gap-0.5 md:flex md:gap-1">
-        {LINKS.map(({ href, key }) => {
+        {LINKS.map(({ href, key, label }) => {
           const isPremiumLink = href === "/premium";
-          const baseLabel = t(key);
-          const finalLabel = isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel;
+          const baseLabel = (key != null ? t(key) : label) ?? "";
+          const finalLabel = (isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel) ?? "";
           const premiumClasses = isPremiumLink && isPremiumActive ? "text-emerald-400 border border-emerald-500/40 bg-emerald-500/10" : "";
           return (
           <Link
@@ -110,10 +110,10 @@ export function HeaderNav() {
             role="dialog"
             aria-label={t("navLabel")}
           >
-            {LINKS.map(({ href, key }) => {
+            {LINKS.map(({ href, key, label }) => {
               const isPremiumLink = href === "/premium";
-              const baseLabel = t(key);
-              const finalLabel = isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel;
+              const baseLabel = (key != null ? t(key) : label) ?? "";
+              const finalLabel = (isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel) ?? "";
               const premiumClasses = isPremiumLink && isPremiumActive ? "text-emerald-400 border border-emerald-500/40 bg-emerald-500/10" : "";
               return (
               <Link
