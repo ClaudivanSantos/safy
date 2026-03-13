@@ -102,10 +102,10 @@ export default function InicioClient() {
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
           <h1 className="relative text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Dashboard DeFi
+            DeFi Llama · mercado
           </h1>
           <p className="relative mt-2 text-foreground/70">
-            Visão geral do ecossistema — TVL total, chains, protocolos e distribuição.
+            Dados públicos do ecossistema DeFi (não são saldos da sua carteira).
           </p>
         </header>
 

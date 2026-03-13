@@ -23,7 +23,8 @@ export type PremiumNetwork = {
 };
 
 const BNB_RPC = process.env.BNB_RPC_URL ?? "https://bsc-dataseed.binance.org";
-const POL_RPC = process.env.POL_RPC_URL ?? "https://polygon-rpc.com";
+const POL_RPC =
+  process.env.POL_RPC_URL ?? "https://polygon-bor.publicnode.com";
 const ARB_RPC = process.env.ARB_RPC_URL ?? "https://arb1.arbitrum.io/rpc";
 
 export const PREMIUM_NETWORKS: PremiumNetwork[] = [
@@ -55,7 +56,7 @@ export const PREMIUM_NETWORKS: PremiumNetwork[] = [
       chainId: "0x89",
       chainName: "Polygon",
       nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
-      rpcUrls: ["https://polygon-rpc.com"],
+      rpcUrls: [POL_RPC],
       blockExplorerUrls: ["https://polygonscan.com"],
     },
   },

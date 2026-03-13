@@ -20,7 +20,7 @@ export const CHAINS = {
   },
   polygon: {
     name: "Polygon",
-    rpc: "https://polygon-rpc.com",
+    rpc: "https://polygon-bor.publicnode.com",
     chainId: 137,
     dexscreenerId: "polygon",
   },

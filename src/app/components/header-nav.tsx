@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 const LINKS = [
-  { href: "/dashboard", label: "Dashbaord" },
+  { href: "/dashboard", label: "DeFi (mercado)" },
+  { href: "/carteira", label: "Carteira" },
   { href: "/preco-medio", label: "Preço Médio" },
   { href: "/pools-liquidez", label: "Pools" },
   { href: "/saude-defi", label: "Saúde DeFi (Aave)" },
