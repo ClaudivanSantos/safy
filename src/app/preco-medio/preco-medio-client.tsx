@@ -21,6 +21,7 @@ import {
   removePurchase,
 } from "./actions";
 import { MOEDAS, type PurchaseRow } from "./constants";
+import { useTranslation } from "../hooks/use-translation";
 
 const COLORS = ["#22c55e", "#a855f7", "#3b82f6", "#f59e0b", "#ec4899", "#14b8a6", "#eab308", "#6366f1"];
 const CURRENCY_SYMBOL: Record<string, string> = {
@@ -67,6 +68,7 @@ export default function PrecoMedioClient({
   const [precoAtual, setPrecoAtual] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation("averagePricePage");
 
   const load = useCallback(async () => {
     const res = await getPurchases();
@@ -232,10 +234,10 @@ export default function PrecoMedioClient({
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
           <div className="relative">
             <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-              Preço Médio
+              {t("title")}
             </h1>
             <p className="mt-2 text-sm text-foreground/70 md:text-base">
-              Acompanhe suas criptomoedas com gráficos e preço médio.
+              {t("subtitle")}
             </p>
           </div>
         </header>
@@ -248,14 +250,14 @@ export default function PrecoMedioClient({
                 onClick={exportToCSV}
                 className="rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
-                Exportar CSV
+                {t("exportCsv")}
               </button>
               <button
                 type="button"
                 onClick={exportToExcel}
                 className="rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
-                Exportar Excel
+                {t("exportExcel")}
               </button>
             </>
           )}
@@ -269,15 +271,15 @@ export default function PrecoMedioClient({
               setError(null);
             }}
             className="rounded-xl bg-primary px-5 py-2.5 font-medium text-black transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            title={!isLoggedIn ? "Faça login para adicionar compras." : undefined}
+            title={!isLoggedIn ? t("addPurchaseTooltip") : undefined}
           >
-            Adicionar compra
+            {t("addPurchase")}
           </button>
         </div>
 
         <div className="rounded-xl border border-border bg-muted/20 p-6">
           <label className="mb-2 block text-xs font-medium text-foreground/80">
-            Criptomoeda
+            {t("cryptoLabel")}
           </label>
           <select
             value={currency}
@@ -305,7 +307,7 @@ export default function PrecoMedioClient({
             {barData.length > 0 && (
               <section className="rounded-xl border border-border bg-muted/20 p-6">
                 <h2 className="mb-4 text-lg font-semibold text-foreground">
-                  Total investido por moeda
+                  {t("totalInvestedByCoin")}
                 </h2>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={barData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
@@ -345,7 +347,7 @@ export default function PrecoMedioClient({
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Entradas ({currency})
+                  {t("entriesTitle").replace("{currency}", currency)}
                 </h2>
                 {filtered.length > 0 && (
                   <button
@@ -353,7 +355,7 @@ export default function PrecoMedioClient({
                     onClick={handleClear}
                     className="text-xs text-red-400 hover:text-red-300"
                   >
-                    Limpar desta moeda
+                    {t("clearThisCoin")}
                   </button>
                 )}
               </div>
@@ -371,7 +373,7 @@ export default function PrecoMedioClient({
                       type="button"
                       onClick={() => handleRemove(ent.id)}
                       className="text-foreground/60 hover:text-red-400"
-                      aria-label="Remover"
+                      aria-label={t("removeEntryAria")}
                     >
                       ×
                     </button>
@@ -383,7 +385,7 @@ export default function PrecoMedioClient({
             {chartData.length > 0 && (
               <section className="rounded-xl border border-border bg-muted/20 p-6">
                 <h2 className="mb-4 text-lg font-semibold text-foreground">
-                  Evolução do preço médio ({currency})
+                  {t("chartAverageEvolution").replace("{currency}", currency)}
                 </h2>
                 <ResponsiveContainer width="100%" height={240}>
                   <LineChart
@@ -409,9 +411,11 @@ export default function PrecoMedioClient({
                       }}
                       formatter={(value) => [
                         `${usdFormatter.format(Number(value ?? 0))}`,
-                        "Preço médio",
+                        t("chartLabelPrice"),
                       ]}
-                      labelFormatter={(label) => `Data: ${label}`}
+                      labelFormatter={(label) =>
+                        t("chartLabelDate").replace("{date}", String(label))
+                      }
                     />
                     <Line
                       type="monotone"
@@ -419,7 +423,7 @@ export default function PrecoMedioClient({
                       stroke="#22c55e"
                       strokeWidth={2}
                       dot={{ fill: "#22c55e", r: 4 }}
-                      name="Preço médio"
+                      name={t("chartLabelPrice")}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -428,13 +432,17 @@ export default function PrecoMedioClient({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-border bg-muted/20 p-5 transition hover:border-accent/30">
-                <p className="text-xs font-medium uppercase tracking-wider text-foreground/60">Total investido (USD)</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+                  {t("totalInvestedUsd")}
+                </p>
                 <p className="mt-1 text-2xl font-semibold text-foreground">
                   {usdFormatter.format(totalInvestidoUsd)}
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-muted/20 p-5 transition hover:border-accent/30">
-                <p className="text-xs font-medium uppercase tracking-wider text-foreground/60">Preço médio</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+                  {t("averagePrice")}
+                </p>
                 <p className="mt-1 text-2xl font-semibold text-primary">
                   {symbol} {precoMedio.toFixed(2)}
                 </p>
@@ -446,7 +454,7 @@ export default function PrecoMedioClient({
                 htmlFor="preco-atual"
                 className="mb-2 block text-xs font-medium text-foreground/80"
               >
-                Preço atual (para P/L estimado)
+                {t("currentPriceLabel")}
               </label>
               <input
                 id="preco-atual"
@@ -461,7 +469,7 @@ export default function PrecoMedioClient({
               />
               {plValor !== null && plPercent !== null && (
                 <div className="mt-3 text-sm">
-                  <p className="text-foreground/70">P/L estimado</p>
+                  <p className="text-foreground/70">{t("estimatedPl")}</p>
                   <p
                     className={
                       plValor >= 0
@@ -480,8 +488,7 @@ export default function PrecoMedioClient({
 
         {purchases.length === 0 && (
           <p className="rounded-xl border border-border bg-muted/20 py-12 text-center text-sm text-foreground/60">
-            Clique em &quot;Adicionar compra&quot; para registrar suas compras e
-            ver gráficos e preço médio.
+            {t("addPurchaseCta")}
           </p>
         )}
 
@@ -499,12 +506,12 @@ export default function PrecoMedioClient({
             />
             <div className="relative w-full max-w-sm rounded-xl border border-border bg-background p-5 shadow-xl">
               <h2 id="modal-title" className="mb-4 text-lg font-semibold text-foreground">
-                Adicionar compra
+                {t("modalTitle")}
               </h2>
               <form onSubmit={handleAdd} className="space-y-4">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-foreground/80">
-                    Criptomoeda
+                    {t("modalCrypto")}
                   </label>
                   <select
                     value={modalCurrency}
@@ -522,7 +529,7 @@ export default function PrecoMedioClient({
                 </div>
                 <div>
                   <label htmlFor="modal-preco" className="mb-1 block text-xs font-medium text-foreground/80">
-                    Preço unitário (USD)
+                    {t("modalUnitPrice")}
                   </label>
                   <input
                     id="modal-preco"
@@ -538,7 +545,7 @@ export default function PrecoMedioClient({
                 </div>
                 <div>
                   <label htmlFor="modal-data" className="mb-1 block text-xs font-medium text-foreground/80">
-                    Data
+                    {t("modalDate")}
                   </label>
                   <input
                     id="modal-data"
@@ -553,7 +560,7 @@ export default function PrecoMedioClient({
                 </div>
                 <div>
                   <label htmlFor="modal-quantidade" className="mb-1 block text-xs font-medium text-foreground/80">
-                    Quantidade de {modalCurrency}
+                    {t("modalQuantity").replace("{currency}", modalCurrency)}
                   </label>
                   <input
                     id="modal-quantidade"
@@ -569,7 +576,7 @@ export default function PrecoMedioClient({
                 </div>
                 <div>
                   <label htmlFor="modal-total-usd" className="mb-1 block text-xs font-medium text-foreground/80">
-                    Valor total (USD)
+                    {t("modalTotalUsd")}
                   </label>
                   <input
                     id="modal-total-usd"
@@ -585,14 +592,14 @@ export default function PrecoMedioClient({
                     onClick={() => setModalOpen(false)}
                     className="flex-1 rounded-lg border border-border bg-muted py-2.5 font-medium text-foreground hover:bg-muted/80"
                   >
-                    Fechar
+                    {t("modalClose")}
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
                     className="flex-1 rounded-lg bg-primary py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
                   >
-                    {loading ? "Salvando…" : "Adicionar"}
+                    {loading ? t("modalSaving") : t("modalAdd")}
                   </button>
                 </div>
               </form>

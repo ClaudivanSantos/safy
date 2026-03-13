@@ -2,19 +2,21 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/app/hooks/use-translation";
 
 const LINKS = [
-  { href: "/dashboard", label: "DeFi" },
-  { href: "/carteira", label: "Carteira" },
-  { href: "/preco-medio", label: "Preço médio" },
-  { href: "/pools-liquidez", label: "Pools" },
-  { href: "/saude-defi", label: "Saúde DeFi" },
-  //{ href: "/premium", label: "Premium" },
+  { href: "/dashboard", key: "dashboard" as const },
+  { href: "/carteira", key: "wallet" as const },
+  { href: "/preco-medio", key: "averagePrice" as const },
+  { href: "/pools-liquidez", key: "pools" as const },
+  { href: "/saude-defi", key: "defiHealth" as const },
+  { href: "/premium", label: "Premium" },
 ];
 
 export function HeaderNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPremiumActive, setIsPremiumActive] = useState(false);
+  const { t } = useTranslation("nav");
 
   useEffect(() => {
     let cancelled = false;
@@ -57,9 +59,10 @@ export function HeaderNav() {
     <>
       {/* Desktop nav */}
       <nav className="order-2 hidden items-center gap-0.5 md:flex md:gap-1">
-        {LINKS.map(({ href, label }) => {
+        {LINKS.map(({ href, key, label }) => {
           const isPremiumLink = href === "/premium";
-          const finalLabel = isPremiumLink && isPremiumActive ? "Premium ativo" : label;
+          const baseLabel = (key != null ? t(key) : label) ?? "";
+          const finalLabel = (isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel) ?? "";
           const premiumClasses = isPremiumLink && isPremiumActive ? "text-emerald-400 border border-emerald-500/40 bg-emerald-500/10" : "";
           return (
           <Link
@@ -79,7 +82,7 @@ export function HeaderNav() {
           type="button"
           onClick={() => setMobileOpen((o) => !o)}
           className="rounded-md p-2 text-foreground/90 hover:bg-muted hover:text-primary"
-          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+          aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
           aria-expanded={mobileOpen}
         >
           {mobileOpen ? (
@@ -105,11 +108,12 @@ export function HeaderNav() {
           <nav
             className="fixed left-0 right-0 top-12 z-50 flex flex-col gap-0 border-b border-border bg-background/98 p-2 backdrop-blur md:hidden"
             role="dialog"
-            aria-label="Menu de navegação"
+            aria-label={t("navLabel")}
           >
-            {LINKS.map(({ href, label }) => {
+            {LINKS.map(({ href, key, label }) => {
               const isPremiumLink = href === "/premium";
-              const finalLabel = isPremiumLink && isPremiumActive ? "Premium ativo" : label;
+              const baseLabel = (key != null ? t(key) : label) ?? "";
+              const finalLabel = (isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel) ?? "";
               const premiumClasses = isPremiumLink && isPremiumActive ? "text-emerald-400 border border-emerald-500/40 bg-emerald-500/10" : "";
               return (
               <Link

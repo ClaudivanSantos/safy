@@ -5,31 +5,28 @@ import { useEffect, useState } from "react";
 import { DonationModal } from "./components/donation-modal";
 import { Footer } from "./components/footer";
 import Image from "next/image";
+import { useTranslation } from "./hooks/use-translation";
 
 const STORAGE_KEY = "safy-donation-modal-seen";
 
 const FEATURES = [
   {
-    title: "Dashboard",
-    description: "Visão geral do ecossistema DeFi: TVL total, chains, protocolos e preços em tempo real.",
+    key: "dashboard" as const,
     href: "/dashboard",
     icon: "📊",
   },
   {
-    title: "Preço Médio",
-    description: "Calculadora de preço médio para suas posições em criptomoedas.",
+    key: "averagePrice" as const,
     href: "/preco-medio",
     icon: "🧮",
   },
   {
-    title: "Pools de Liquidez",
-    description: "Suas posições LP e lista de pools por rede (Ethereum, BNB, Polygon, Arbitrum).",
+    key: "pools" as const,
     href: "/pools-liquidez",
     icon: "💧",
   },
   {
-    title: "Saúde DeFi (Aave)",
-    description: "Health factor, colateral, dívida e preço de liquidação na Aave V3.",
+    key: "defiHealth" as const,
     href: "/saude-defi",
     icon: "❤️",
   },
@@ -51,6 +48,7 @@ function ProtocolLogo({ name, color }: { name: string; color: string }) {
 export function HomeClient() {
   const [donationOpen, setDonationOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { t } = useTranslation("home");
 
   useEffect(() => {
     setMounted(true);
@@ -81,7 +79,10 @@ export function HomeClient() {
   return (
     <>
       <div className="flex min-h-full flex-col">
-        <main className="flex flex-1 flex-col px-4 py-10 pb-6">
+        <main
+          className="flex flex-1 flex-col px-4 py-10 pb-6"
+          suppressHydrationWarning
+        >
           <div className="mx-auto max-w-5xl space-y-14">
             {/* Hero */}
             <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center md:p-12">
@@ -102,12 +103,10 @@ export function HomeClient() {
                     Safy
                   </h1>
                   <p className="mt-2 text-lg font-medium text-foreground/90 md:text-xl">
-                    Ferramenta gratuita para decisões mais seguras em DeFi.
+                    {t("subtitle")}
                   </p>
                   <p className="mt-4 max-w-2xl text-sm text-foreground/70 md:text-base">
-                    Calculadora de preço médio, análise de pools de liquidez e
-                    monitoramento de saúde em protocolos Aave — tudo em um só lugar
-                    para você tomar decisões informadas.
+                    {t("description")}
                   </p>
                 </div>
                 {/* Decorative animated gradient */}
@@ -122,36 +121,54 @@ export function HomeClient() {
             {/* Funcionalidades */}
             <section>
               <h2 className="mb-6 text-center text-xl font-semibold text-foreground md:text-2xl">
-                Funcionalidades
+                {t("featuresTitle")}
               </h2>
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {FEATURES.map((f) => (
-                  <Link
-                    key={f.href}
-                    href={f.href}
-                    className="group relative overflow-hidden rounded-xl border border-border bg-muted/20 p-6 transition hover:border-accent/40 hover:bg-muted/30"
-                  >
-                    <h3 className="font-semibold text-foreground group-hover:text-primary">
-                      {f.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-foreground/70">
-                      {f.description}
-                    </p>
-                    <span className="mt-3 inline-flex items-center text-xs font-medium text-primary">
-                      Acessar
-                      <svg className="ml-1 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
-                  </Link>
-                ))}
+                {FEATURES.map((f) => {
+                  const titleKey =
+                    f.key === "dashboard"
+                      ? "featureDashboardTitle"
+                      : f.key === "averagePrice"
+                      ? "featureAveragePriceTitle"
+                      : f.key === "pools"
+                      ? "featurePoolsTitle"
+                      : "featureDefiHealthTitle";
+                  const descriptionKey =
+                    f.key === "dashboard"
+                      ? "featureDashboardDescription"
+                      : f.key === "averagePrice"
+                      ? "featureAveragePriceDescription"
+                      : f.key === "pools"
+                      ? "featurePoolsDescription"
+                      : "featureDefiHealthDescription";
+                  return (
+                    <Link
+                      key={f.href}
+                      href={f.href}
+                      className="group relative overflow-hidden rounded-xl border border-border bg-muted/20 p-6 transition hover:border-accent/40 hover:bg-muted/30"
+                    >
+                      <h3 className="font-semibold text-foreground group-hover:text-primary">
+                        {t(titleKey)}
+                      </h3>
+                      <p className="mt-1 text-sm text-foreground/70">
+                        {t(descriptionKey)}
+                      </p>
+                      <span className="mt-3 inline-flex items-center text-xs font-medium text-primary">
+                        {t("access")}
+                        <svg className="ml-1 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
 
             {/* CTA */}
             <section className="rounded-xl border border-border bg-muted/20 p-6 text-center">
               <p className="text-sm text-foreground/80">
-                Conecte sua carteira no header e explore o dashboard, pools e saúde Aave.
+                {t("cta")}
               </p>
             </section>
 

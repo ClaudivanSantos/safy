@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "../hooks/use-translation";
 
 export function SignupForm() {
   const [state, setState] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [nome, setNome] = useState("");
   const [password, setPassword] = useState("");
+  const { t } = useTranslation("authSignup");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,14 +32,14 @@ export function SignupForm() {
       };
 
       if (!res.ok) {
-        setState(data.error ?? "Erro ao criar conta.");
+        setState(data.error ?? t("errorCreate"));
         return;
       }
 
       const loc = (globalThis as { location?: { href: string } }).location;
       if (loc) loc.href = data.redirect ?? "/";
     } catch (error) {
-      setState(error instanceof Error ? error.message : "Erro ao criar conta.");
+      setState(error instanceof Error ? error.message : t("errorCreate"));
     } finally {
       setLoading(false);
     }
@@ -50,7 +52,7 @@ export function SignupForm() {
           htmlFor="nome"
           className="mb-1 block text-sm font-medium text-foreground"
         >
-          Nome de usuário
+          {t("usernameLabel")}
         </label>
         <input
           id="nome"
@@ -59,7 +61,7 @@ export function SignupForm() {
           required
           autoComplete="username"
           minLength={2}
-          placeholder="Seu nome de usuário"
+          placeholder={t("usernamePlaceholder")}
           value={nome}
           onChange={(e) =>
             setNome((e.target as unknown as { value: string }).value)
@@ -72,7 +74,7 @@ export function SignupForm() {
           htmlFor="password"
           className="mb-1 block text-sm font-medium text-foreground"
         >
-          Senha
+          {t("passwordLabel")}
         </label>
         <input
           id="password"
@@ -81,7 +83,7 @@ export function SignupForm() {
           required
           autoComplete="new-password"
           minLength={6}
-          placeholder="Mínimo 6 caracteres"
+          placeholder={t("passwordPlaceholder")}
           value={password}
           onChange={(e) =>
             setPassword((e.target as unknown as { value: string }).value)
@@ -99,7 +101,7 @@ export function SignupForm() {
         disabled={loading}
         className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-black transition-colors hover:bg-primary-hover"
       >
-        {loading ? "Criando..." : "Criar conta"}
+        {loading ? t("creating") : t("create")}
       </button>
     </form>
   );

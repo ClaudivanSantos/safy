@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTranslation } from "@/app/hooks/use-translation";
+import { useLanguage } from "@/app/contexts/language-context";
 import {
   BarChart,
   Bar,
@@ -45,6 +47,8 @@ export default function InicioClient() {
   const [chains, setChains] = useState<ChainOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation("dashboard");
+  const { language } = useLanguage();
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +61,7 @@ export default function InicioClient() {
         setChains(c);
       })
       .catch(() => {
-        if (!cancelled) setError("Falha ao carregar dados do dashboard.");
+        if (!cancelled) setError(t("loadError"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -102,10 +106,10 @@ export default function InicioClient() {
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
           <h1 className="relative text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            DeFi Llama · mercado
+            {t("headerTitle")}
           </h1>
           <p className="relative mt-2 text-foreground/70">
-            Dados públicos do ecossistema DeFi (não são saldos da sua carteira).
+            {t("headerDescription")}
           </p>
         </header>
 
@@ -118,18 +122,20 @@ export default function InicioClient() {
         {/* Preços das principais moedas — TradingView + CoinGecko */}
         <section className="rounded-xl border border-border bg-muted/20 p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Preços das principais moedas
+            {t("pricesTitle")}
           </h2>
           <p className="mb-4 text-sm text-foreground/60">
-            Cotações em tempo real (TradingView). Dados de terceiros.
+            {t("pricesSubtitle")}
           </p>
           <div className="space-y-6">
             {/* TradingView Ticker Tape */}
             <div className="overflow-hidden rounded-lg border border-border">
               <iframe
-                title="TradingView Ticker Tape — criptomoedas"
+                title={t("tradingviewTitle")}
                 src={
-                  "https://s.tradingview.com/embed-widget/ticker-tape/?locale=pt#" +
+                  `https://s.tradingview.com/embed-widget/ticker-tape/?locale=${
+                    language === "pt-BR" ? "pt" : "en"
+                  }#` +
                   encodeURIComponent(
                     JSON.stringify({
                       symbols: [
@@ -163,7 +169,7 @@ export default function InicioClient() {
         {/* Total Value Locked in DeFi */}
         <section className="rounded-xl border border-border bg-muted/20 p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Total Value Locked in DeFi
+            {t("tvlTotalTitle")}
           </h2>
           {loading ? (
             <div className="h-8 w-48 animate-pulse rounded bg-muted/40" />
@@ -173,7 +179,7 @@ export default function InicioClient() {
             </p>
           )}
           <p className="mt-1 text-sm text-foreground/60">
-            Soma do TVL em todas as chains.
+            {t("tvlTotalSubtitle")}
           </p>
           {!loading && topChainsForChart.length > 0 && (
             <div className="mt-6 h-64 w-full">
@@ -212,7 +218,7 @@ export default function InicioClient() {
         {/* TVL por chain (cards) */}
         <section>
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            TVL por chain
+            {t("tvlByChainTitle")}
           </h2>
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -245,7 +251,7 @@ export default function InicioClient() {
         {/* Protocol Rankings */}
         <section>
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Protocol Rankings
+            {t("protocolRankingsTitle")}
           </h2>
           {loading ? (
             <div className="h-80 animate-pulse rounded-xl border border-border bg-muted/30" />
@@ -264,7 +270,7 @@ export default function InicioClient() {
                     {topProtocols.length === 0 && (
                       <tr>
                         <td colSpan={3} className="px-4 py-8 text-center text-foreground/50">
-                          Nenhum protocolo disponível no momento.
+                          {t("noProtocols")}
                         </td>
                       </tr>
                     )}
@@ -293,7 +299,7 @@ export default function InicioClient() {
 
         {/* Footer do dashboard */}
         <p className="text-center text-xs text-foreground/50">
-          Dados de TVL via{" "}
+          {t("tvlSourcePrefix")}
           <a
             href="https://defillama.com"
             target="_blank"
@@ -302,7 +308,7 @@ export default function InicioClient() {
           >
             DefiLlama
           </a>
-          . Atualizados periodicamente.
+          {t("tvlSourceSuffix")}
         </p>
       </div>
     </div>

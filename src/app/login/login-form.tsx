@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "../hooks/use-translation";
 import Link from "next/link";
 
 type Mode = "choose" | "create" | "enter";
@@ -21,6 +22,7 @@ export function LoginForm() {
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [tokenRevealed, setTokenRevealed] = useState(false);
   const [capacityReached, setCapacityReached] = useState(false);
+  const { t } = useTranslation("authLogin");
 
   useEffect(() => {
     if (!createdToken) return;
@@ -44,7 +46,7 @@ export function LoginForm() {
         capacityReached?: boolean;
       };
       if (!res.ok) {
-        setError(data.error ?? "Erro ao criar conta.");
+        setError(data.error ?? t("errorCreate"));
         setLoading(false);
         return;
       }
@@ -52,7 +54,7 @@ export function LoginForm() {
       setCapacityReached(Boolean(data.capacityReached));
       setLoading(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao criar conta.");
+      setError(e instanceof Error ? e.message : t("errorCreate"));
       setLoading(false);
     }
   }
@@ -69,14 +71,14 @@ export function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Erro ao entrar.");
+        setError(data.error ?? t("errorLogin"));
         setLoading(false);
         return;
       }
       const loc = (globalThis as { location?: { href: string } }).location;
       if (loc) loc.href = data.redirect ?? "/";
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao entrar.");
+      setError(e instanceof Error ? e.message : t("errorLogin"));
       setLoading(false);
     }
   }
@@ -89,19 +91,15 @@ export function LoginForm() {
       <div className="space-y-4">
         <div className="rounded-lg border border-primary/40 bg-primary/10 p-4">
           <p className="mb-2 text-sm font-medium text-primary">
-            {tokenRevealed
-              ? "Seu token de recuperação (guarde para caso esqueça a senha):"
-              : "Conta criada. Seu token está sendo preparado…"}
+            {tokenRevealed ? t("tokenTitle") : t("tokenPreparing")}
           </p>
           {tokenRevealed ? (
             <>
               <p className="break-all font-mono text-sm text-foreground">{createdToken}</p>
-              <p className="mt-3 text-xs text-foreground/70">
-                Use este token na opção &quot;Esqueci senha&quot; para redefinir sua senha. Ele não será exibido novamente.
-              </p>
+              <p className="mt-3 text-xs text-foreground/70">{t("tokenHelp")}</p>
               {capacityReached && (
                 <p className="mt-2 text-xs font-medium text-amber-300">
-                  Capacidade máxima de <strong>100 usuários</strong> atingida. Novos cadastros poderão ser bloqueados.
+                  {t("tokenCapacityWarning")}
                 </p>
               )}
               <button
@@ -109,11 +107,11 @@ export function LoginForm() {
                 onClick={copyToken}
                 className="mt-2 rounded border border-primary/50 bg-primary/20 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/30"
               >
-                Copiar token
+                {t("copyToken")}
               </button>
             </>
           ) : (
-            <p className="text-sm text-foreground/70">Em instantes o token aparecerá aqui. Guarde-o em lugar seguro.</p>
+            <p className="text-sm text-foreground/70">{t("tokenSoon")}</p>
           )}
         </div>
         <button
@@ -124,7 +122,7 @@ export function LoginForm() {
           }}
           className={`w-full ${btnPrimary}`}
         >
-          Ir para o app
+          {t("goToApp")}
         </button>
       </div>
     );
@@ -136,22 +134,26 @@ export function LoginForm() {
         {error && (
           <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
         )}
-        <label className="block text-sm font-medium text-foreground/90">Nome de usuário</label>
+        <label className="block text-sm font-medium text-foreground/90">
+          {t("usernameLabel")}
+        </label>
         <input
           type="text"
           required
           minLength={2}
-          placeholder="Como quer ser chamado"
+          placeholder={t("usernamePlaceholderCreate")}
           value={nome}
           onChange={(e) => setNome((e.target as unknown as { value: string }).value)}
           className={inputClass}
         />
-        <label className="block text-sm font-medium text-foreground/90">Senha</label>
+        <label className="block text-sm font-medium text-foreground/90">
+          {t("passwordLabel")}
+        </label>
         <input
           type="password"
           required
           minLength={6}
-          placeholder="Mínimo 6 caracteres"
+          placeholder={t("passwordPlaceholder")}
           value={senha}
           onChange={(e) => setSenha((e.target as unknown as { value: string }).value)}
           className={inputClass}
@@ -167,10 +169,10 @@ export function LoginForm() {
             }}
             className={btnSecondary}
           >
-            Voltar
+            {t("back")}
           </button>
           <button type="submit" disabled={loading} className={`flex-1 ${btnPrimary}`}>
-            {loading ? "Criando..." : "Criar conta"}
+            {loading ? t("creating") : t("create")}
           </button>
         </div>
       </form>
@@ -183,20 +185,24 @@ export function LoginForm() {
         {error && (
           <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
         )}
-        <label className="block text-sm font-medium text-foreground/90">Nome de usuário</label>
+        <label className="block text-sm font-medium text-foreground/90">
+          {t("usernameLabel")}
+        </label>
         <input
           type="text"
           required
-          placeholder="Seu nome de usuário"
+          placeholder={t("usernamePlaceholderLogin")}
           value={nome}
           onChange={(e) => setNome((e.target as unknown as { value: string }).value)}
           className={inputClass}
         />
-        <label className="block text-sm font-medium text-foreground/90">Senha</label>
+        <label className="block text-sm font-medium text-foreground/90">
+          {t("passwordLabel")}
+        </label>
         <input
           type="password"
           required
-          placeholder="Sua senha"
+          placeholder={t("passwordPlaceholderLogin")}
           value={senha}
           onChange={(e) => setSenha((e.target as unknown as { value: string }).value)}
           className={inputClass}
@@ -212,10 +218,10 @@ export function LoginForm() {
             }}
             className={btnSecondary}
           >
-            Voltar
+            {t("back")}
           </button>
           <button type="submit" disabled={loading} className={`flex-1 ${btnPrimary}`}>
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? t("entering") : t("enter")}
           </button>
         </div>
       </form>
@@ -232,16 +238,16 @@ export function LoginForm() {
         onClick={() => setMode("create")}
         className={`w-full ${btnPrimary} px-4`}
       >
-        Criar conta (nome e senha)
+        {t("createOption")}
       </button>
       <button type="button" onClick={() => setMode("enter")} className={`w-full ${btnSecondary} px-4`}>
-        Já tenho conta — entrar
+        {t("alreadyHaveAccount")}
       </button>
       <Link
         href="/esqueci-senha"
         className="block w-full rounded-lg border border-border/60 px-4 py-3 text-center text-sm text-foreground/70 hover:bg-muted/50"
       >
-        Esqueci minha senha
+        {t("forgotPassword")}
       </Link>
     </div>
   );

@@ -3,7 +3,7 @@
  * PAYMENT_ADDRESS é o mesmo em todas (endereço EVM).
  */
 
-export type PremiumNetworkId = "bsc" | "polygon" | "arbitrum";
+export type PremiumNetworkId = "bsc" | "polygon" | "arbitrum" | "ethereum";
 
 export type PremiumNetwork = {
   id: PremiumNetworkId;
@@ -26,6 +26,7 @@ const BNB_RPC = process.env.BNB_RPC_URL ?? "https://bsc-dataseed.binance.org";
 const POL_RPC =
   process.env.POL_RPC_URL ?? "https://polygon-bor.publicnode.com";
 const ARB_RPC = process.env.ARB_RPC_URL ?? "https://arb1.arbitrum.io/rpc";
+const ETH_RPC = process.env.ETH_RPC_URL ?? "https://rpc.ankr.com/eth";
 
 export const PREMIUM_NETWORKS: PremiumNetwork[] = [
   {
@@ -74,6 +75,22 @@ export const PREMIUM_NETWORKS: PremiumNetwork[] = [
       nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
       rpcUrls: ["https://arb1.arbitrum.io/rpc"],
       blockExplorerUrls: ["https://arbiscan.io"],
+    },
+  },
+  {
+    id: "ethereum",
+    name: "Ethereum",
+    chainId: 1,
+    chainIdHex: "0x1",
+    usdtContract: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    decimals: 6,
+    rpcUrl: ETH_RPC,
+    chainParams: {
+      chainId: "0x1",
+      chainName: "Ethereum",
+      nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+      rpcUrls: [ETH_RPC],
+      blockExplorerUrls: ["https://etherscan.io"],
     },
   },
 ];
