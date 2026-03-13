@@ -19,10 +19,10 @@ function parseReceiptLogsForTransfer(
   usdtContract: string,
   paymentAddress: string,
   minAmountWei: bigint
-): boolean {
+): bigint | null {
   const toTopic = "0x" + getAddress(paymentAddress).slice(2).toLowerCase().padStart(64, "0");
   const usdt = usdtContract.toLowerCase();
-  if (!receipt.logs?.length) return false;
+  if (!receipt.logs?.length) return null;
   for (const log of receipt.logs) {
     const addr = (log.address ?? "").toLowerCase();
     const topics = log.topics ?? [];
@@ -30,9 +30,9 @@ function parseReceiptLogsForTransfer(
       continue;
     const data = log.data ?? "0x0";
     const value = BigInt(data);
-    if (value >= minAmountWei) return true;
+    if (value >= minAmountWei) return value;
   }
-  return false;
+  return null;
 }
 
 export async function GET(request: Request) {
@@ -82,18 +82,20 @@ export async function GET(request: Request) {
       const session = await getSession();
       if (session?.sub) {
         const paymentAddress = getAddress(PAYMENT_ADDRESS_ENV);
-        const minAmountWei =
-          BigInt(2) * BigInt(10) ** BigInt(net.decimals);
-        const valid = parseReceiptLogsForTransfer(
+        const monthlyMinWei = BigInt(2) * BigInt(10) ** BigInt(net.decimals);
+        const paidAmountWei = parseReceiptLogsForTransfer(
           receipt,
           net.usdtContract,
           paymentAddress,
-          minAmountWei
+          monthlyMinWei
         );
-        if (valid) {
+        if (paidAmountWei && paidAmountWei >= monthlyMinWei) {
           const now = Date.now();
           const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-          const expiresAt = new Date(now + THIRTY_DAYS_MS);
+          const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+          const annualMinWei = BigInt(18) * BigInt(10) ** BigInt(net.decimals);
+          const isAnnual = paidAmountWei >= annualMinWei;
+          const expiresAt = new Date(now + (isAnnual ? ONE_YEAR_MS : THIRTY_DAYS_MS));
           await prisma.user.update({
             where: { id: session.sub },
             data: {

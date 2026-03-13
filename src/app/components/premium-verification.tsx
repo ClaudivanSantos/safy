@@ -54,6 +54,7 @@ export function PremiumVerification() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [selectedNetworkId, setSelectedNetworkId] = useState<PremiumNetworkId>("bsc");
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
   const [payingLoading, setPayingLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +158,8 @@ export function PremiumVerification() {
       return;
     }
     const net = selectedNetwork;
-    const amountWei = BigInt(2) * BigInt(10) ** BigInt(net.decimals);
+    const priceUsd = billingPeriod === "annual" ? 18 : 2;
+    const amountWei = BigInt(priceUsd) * BigInt(10) ** BigInt(net.decimals);
     try {
       const okChain = await ensureChain(eth, net.chainIdHex, net.chainParams);
       if (!okChain) {
@@ -320,6 +322,33 @@ export function PremiumVerification() {
       {!isPremiumActive && canSeePremium && paymentInfo && (
         <>
           <p className="mb-3 text-sm font-medium text-foreground">
+            Qual plano você deseja?
+          </p>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setBillingPeriod("monthly")}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                billingPeriod === "monthly"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
+              }`}
+            >
+              <span>Mensal · US$ 2</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingPeriod("annual")}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                billingPeriod === "annual"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
+              }`}
+            >
+              <span>Anual · US$ 18 (US$ 1,50/mês)</span>
+            </button>
+          </div>
+          <p className="mb-3 text-sm font-medium text-foreground">
             Em qual rede deseja pagar?
           </p>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -344,7 +373,8 @@ export function PremiumVerification() {
             ))}
           </div>
           <p className="mb-2 text-xs text-foreground/60">
-            A carteira será aberta na rede <strong>{selectedNetwork?.name ?? selectedNetworkId}</strong> com 2 USDT preenchidos.
+            A carteira será aberta na rede <strong>{selectedNetwork?.name ?? selectedNetworkId}</strong>{" "}
+            com {billingPeriod === "annual" ? "18 USDT (plano anual)" : "2 USDT (1 mês)"} preenchidos.
           </p>
           {canOpenWallet && (
             <div className="mb-4 flex flex-wrap gap-3">
@@ -354,7 +384,11 @@ export function PremiumVerification() {
                 disabled={payingLoading}
                 className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover disabled:opacity-60"
               >
-                {payingLoading ? "Aguardando confirmação…" : `Abrir carteira e pagar 2 USDT (${selectedNetworkId.toUpperCase()})`}
+                {payingLoading
+                  ? "Aguardando confirmação…"
+                  : `Abrir carteira e pagar ${
+                      billingPeriod === "annual" ? "18 USDT (anual)" : "2 USDT (mensal)"
+                    } (${selectedNetworkId.toUpperCase()})`}
               </button>
             </div>
           )}

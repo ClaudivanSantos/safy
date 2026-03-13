@@ -17,7 +17,7 @@ export async function AuthHeader() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 h-12 border-b border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-full max-w-4xl flex-nowrap items-center justify-between gap-0 pl-0 pr-3 sm:gap-2 sm:px-4">
+      <div className="mx-auto flex h-full max-w-6xl flex-nowrap items-center justify-between gap-1 px-2 sm:gap-2 sm:px-4">
         <HeaderNav />
         <Link href="/" className="order-2 flex shrink-0 items-center md:order-1">
           <Image

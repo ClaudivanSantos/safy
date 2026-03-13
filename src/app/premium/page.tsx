@@ -6,14 +6,16 @@ export default function PremiumPage() {
       <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row">
         <header className="flex-1 rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-6 md:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Plano premium • US$ 2/mês
+            Plano premium • US$ 2/mês ou US$ 18/ano
           </p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Alertas inteligentes para proteger sua carteira DeFi.
           </h1>
           <p className="mt-3 text-sm text-foreground/70 md:text-base">
-            Por apenas <strong className="text-primary">US$ 2</strong> você recebe alertas no Telegram
-            sobre saúde da Aave, risco de liquidação e um relatório diário resumindo sua posição.
+            Por apenas <strong className="text-primary">US$ 2/mês</strong> você recebe alertas no Telegram
+            sobre saúde da Aave, risco de liquidação e um relatório diário resumindo sua posição.{" "}
+            Se preferir, pague <strong className="text-primary">US$ 18/ano</strong> (equivalente a{" "}
+            <strong className="text-primary">US$ 1,50 por mês</strong>).
           </p>
 
           <div className="mt-6 grid gap-4 text-sm md:grid-cols-2">
@@ -29,7 +31,7 @@ export default function PremiumPage() {
             </div>
             <div className="rounded-xl border border-primary/60 bg-primary/10 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                Premium SafyApp · US$ 2
+                Premium SafyApp · US$ 2/mês ou US$ 18/ano
               </p>
               <ul className="mt-2 space-y-1.5 text-foreground">
                 <li>✓ Alertas de saúde da Aave no Telegram</li>

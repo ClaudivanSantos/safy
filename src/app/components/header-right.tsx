@@ -40,11 +40,11 @@ export function HeaderRight({ session, userName }: HeaderRightProps) {
         <button
           type="button"
           onClick={() => setDonationOpen(true)}
-          className="rounded-md p-1.5 font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary sm:px-2.5 sm:py-2 sm:text-sm animate-[coffee-glow_2.5s_ease-in-out_infinite]"
+          className="rounded-md p-1.5 font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary sm:px-2 sm:py-1.5 sm:text-xs animate-[coffee-glow_2.5s_ease-in-out_infinite]"
           title="Apoiar o projeto"
         >
           <span className="sm:hidden">☕</span>
-          <span className="hidden sm:inline">☕ Buy me a coffee</span>
+          <span className="hidden sm:inline">☕ Doar</span>
         </button>
         {address ? (
           <div className="flex items-center gap-1 sm:gap-2">

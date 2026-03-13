@@ -80,7 +80,8 @@ export async function POST(request: Request) {
 
     const userWallet = getAddress(rawWallet);
     const paymentAddress = getAddress(PAYMENT_ADDRESS_ENV);
-    const minAmount = parseUnits("2", net.decimals);
+    const monthlyMin = parseUnits("2", net.decimals);
+    const annualMin = parseUnits("18", net.decimals);
 
     const client = createPublicClient({
       chain: {
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
         value: log.args.value as bigint,
         blockNumber: log.blockNumber ?? BigInt(0),
       }))
-      .filter((item) => item.value >= minAmount)
+      .filter((item) => item.value >= monthlyMin)
       .sort((a, b) =>
         a.blockNumber === b.blockNumber
           ? 0
@@ -133,7 +134,9 @@ export async function POST(request: Request) {
 
     const now = Date.now();
     const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-    const expiresAt = new Date(now + THIRTY_DAYS_MS);
+    const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+    const isAnnual = validLog.value >= annualMin;
+    const expiresAt = new Date(now + (isAnnual ? ONE_YEAR_MS : THIRTY_DAYS_MS));
 
     await prisma.user.update({
       where: { id: session.sub },
