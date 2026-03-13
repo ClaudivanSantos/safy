@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createPublicClient, http, fallback, formatUnits, isAddress, encodeFunctionData, decodeAbiParameters, type Chain } from "viem";
 import { mainnet, polygon, arbitrum } from "viem/chains";
+import { SiEthereum, SiPolygon } from "react-icons/si";
 import { useWallet, shortAddress } from "@/app/contexts/wallet-context";
 import {
   AAVE_NETWORKS,
@@ -444,8 +445,19 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   key={networkId}
                   className="rounded-xl border border-border bg-muted/20 p-6"
                 >
-                  <h2 className="mb-4 text-lg font-semibold text-foreground">
-                    {network.name}
+                  <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted/70 text-base">
+                      {networkId === "ethereum" && (
+                        <SiEthereum className="h-4 w-4" />
+                      )}
+                      {networkId === "polygon" && (
+                        <SiPolygon className="h-4 w-4" />
+                      )}
+                      {networkId === "arbitrum" && (
+                        <SiEthereum className="h-4 w-4" />
+                      )}
+                    </span>
+                    <span>{network.name}</span>
                   </h2>
                   {isError && (
                     <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">

@@ -8,7 +8,7 @@ const LINKS = [
   { href: "/preco-medio", label: "Preço Médio" },
   { href: "/pools-liquidez", label: "Pools" },
   { href: "/saude-defi", label: "Saúde DeFi (Aave)" },
-  // { href: "/premium", label: "Premium" },
+  //{ href: "/premium", label: "Premium" },
 ];
 
 export function HeaderNav() {

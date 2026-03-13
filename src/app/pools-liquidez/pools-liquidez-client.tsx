@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { isAddress } from "viem";
+import { SiEthereum, SiBinance, SiPolygon } from "react-icons/si";
 import { useWallet } from "@/app/contexts/wallet-context";
 import {
   POOL_NETWORKS,
@@ -224,9 +225,17 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
           if (pools === null) return null;
           return (
             <section key={chainId} className="rounded-xl border border-border bg-muted/20 p-6">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">
-                {network.name}
-                {pools.length > 0 && ` (${pools.length})`}
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted/70 text-base">
+                  {chainId === "ethereum" && <SiEthereum className="h-4 w-4" />}
+                  {chainId === "bsc" && <SiBinance className="h-4 w-4" />}
+                  {chainId === "polygon" && <SiPolygon className="h-4 w-4" />}
+                  {chainId === "arbitrum" && <SiEthereum className="h-4 w-4" />}
+                </span>
+                <span>
+                  {network.name}
+                  {pools.length > 0 && ` (${pools.length})`}
+                </span>
               </h2>
               {pools.length === 0 ? (
                 <p className="py-4 text-center text-sm text-foreground/50">

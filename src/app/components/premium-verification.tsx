@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { encodeFunctionData, parseAbiItem } from "viem";
+import { SiBinance, SiPolygon, SiEthereum, SiTelegram } from "react-icons/si";
 import { useWallet } from "@/app/contexts/wallet-context";
 import type { PremiumNetworkId } from "@/lib/premium-networks";
 
@@ -233,12 +234,22 @@ export function PremiumVerification() {
       </h2>
 
       {canSeePremium && isPremiumActive && premiumExpiresAt && (
-        <div className="mb-6 rounded-lg border border-primary/30 bg-primary/10 p-5">
-          <p className="mb-2 text-base font-medium text-primary">
-            Obrigado por ser assinante premium!
-          </p>
-          <p className="text-sm text-foreground/90">
-            Seu plano está ativo até{" "}
+        <div className="mb-6 rounded-2xl border border-primary/40 bg-linear-to-r from-primary/15 via-primary/10 to-sky-500/10 p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary">
+              <span className="text-lg">⭐</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-primary/90">
+                Plano premium ativo
+              </p>
+              <p className="text-sm text-foreground/80">
+                Obrigado por apoiar o SafyApp.
+              </p>
+            </div>
+          </div>
+          <p className="mb-4 text-sm text-foreground/90">
+            Seu plano está válido até{" "}
             <strong>
               {new Intl.DateTimeFormat("pt-BR", {
                 dateStyle: "long",
@@ -247,6 +258,15 @@ export function PremiumVerification() {
             </strong>
             .
           </p>
+          <a
+            href="https://t.me/safyapp_bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-[#229ED9] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1b8ac0]"
+          >
+            <SiTelegram className="h-4 w-4" />
+            Falar com o bot no Telegram
+          </a>
         </div>
       )}
 
@@ -308,13 +328,18 @@ export function PremiumVerification() {
                 key={n.id}
                 type="button"
                 onClick={() => setSelectedNetworkId(n.id)}
-                className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                   selectedNetworkId === n.id
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
                 }`}
               >
-                {n.id === "bsc" ? "BNB" : n.id === "polygon" ? "POL" : "ARB"}
+                {n.id === "bsc" && <SiBinance className="h-4 w-4" />}
+                {n.id === "polygon" && <SiPolygon className="h-4 w-4" />}
+                {n.id === "arbitrum" && <SiEthereum className="h-4 w-4" />}
+                <span>
+                  {n.id === "bsc" ? "BNB" : n.id === "polygon" ? "POL" : "ARB"}
+                </span>
               </button>
             ))}
           </div>
