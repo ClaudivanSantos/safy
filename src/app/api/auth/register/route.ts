@@ -42,6 +42,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const MAX_USERS = 100;
+    const totalUsers = await prisma.user.count();
+    if (totalUsers >= MAX_USERS) {
+      return NextResponse.json(
+        {
+          error:
+            "Capacidade máxima de 100 usuários atingida. No momento não é possível criar novas contas.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const willReachCapacity = totalUsers + 1 >= MAX_USERS;
+
     const recoveryToken = generateRecoveryToken();
     const keyHash = hashRecoveryToken(recoveryToken);
     const passwordHash = await hashPassword(senha);
@@ -57,11 +71,20 @@ export async function POST(request: Request) {
     });
 
     const token = await createSession(user.id);
-    const res = NextResponse.json({
-      ok: true,
-      recoveryToken: recoveryToken,
-      redirect: "/",
-    });
+    const res = NextResponse.json(
+      willReachCapacity
+        ? {
+            ok: true,
+            recoveryToken: recoveryToken,
+            redirect: "/",
+            capacityReached: true,
+          }
+        : {
+            ok: true,
+            recoveryToken: recoveryToken,
+            redirect: "/",
+          }
+    );
     res.cookies.set(COOKIE_NAME, token, COOKIE_OPTIONS);
     return res;
   } catch (e) {

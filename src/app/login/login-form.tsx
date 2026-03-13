@@ -20,6 +20,7 @@ export function LoginForm() {
   const [senha, setSenha] = useState("");
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [tokenRevealed, setTokenRevealed] = useState(false);
+  const [capacityReached, setCapacityReached] = useState(false);
 
   useEffect(() => {
     if (!createdToken) return;
@@ -37,13 +38,18 @@ export function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome: nome.trim(), senha }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as {
+        error?: string;
+        recoveryToken?: string;
+        capacityReached?: boolean;
+      };
       if (!res.ok) {
         setError(data.error ?? "Erro ao criar conta.");
         setLoading(false);
         return;
       }
       setCreatedToken(data.recoveryToken ?? null);
+      setCapacityReached(Boolean(data.capacityReached));
       setLoading(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao criar conta.");
@@ -93,6 +99,11 @@ export function LoginForm() {
               <p className="mt-3 text-xs text-foreground/70">
                 Use este token na opção &quot;Esqueci senha&quot; para redefinir sua senha. Ele não será exibido novamente.
               </p>
+              {capacityReached && (
+                <p className="mt-2 text-xs font-medium text-amber-300">
+                  Capacidade máxima de <strong>100 usuários</strong> atingida. Novos cadastros poderão ser bloqueados.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={copyToken}
