@@ -1,32 +1,26 @@
 import { NextResponse } from "next/server";
 import { sendTelegramMessage } from "@/services/telegram";
 
-const ALERT_CHAT_ID = process.env.CRON_ALERT_TELEGRAM_CHAT_ID;
+const ALERT_CHAT_ID = process.env.ALERT_CHAT_ID;
 
 async function notifyCronError(message: string) {
   if (!ALERT_CHAT_ID) return;
   await sendTelegramMessage(ALERT_CHAT_ID, message);
 }
 
-/**
- * Cron que dispara o job de monitoramento Aave (alertas de health factor).
- * Valida CRON_SECRET e chama o endpoint interno que envia as mensagens no Telegram.
- */
 export async function GET(request: Request) {
-  const auth = request.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const isCron = request.headers.get("x-vercel-cron");
+  if (!isCron) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   const base =
-    process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   try {
     const res = await fetch(`${base}/api/aave-monitor`, {
       method: "GET",
-      headers: auth ? { authorization: auth } : {},
       cache: "no-store",
     });
     const data = await res.json().catch(() => ({}));

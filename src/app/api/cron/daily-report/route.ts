@@ -8,25 +8,19 @@ async function notifyCronError(message: string) {
   await sendTelegramMessage(ALERT_CHAT_ID, message);
 }
 
-/**
- * Cron que dispara o relatório diário (mensagens no Telegram).
- * Valida CRON_SECRET e chama o endpoint interno que envia as mensagens.
- */
 export async function GET(request: Request) {
-  const auth = request.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const isCron = request.headers.get("x-vercel-cron");
+  if (!isCron) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   const base =
-    process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   try {
     const res = await fetch(`${base}/api/daily-report`, {
       method: "GET",
-      headers: auth ? { authorization: auth } : {},
       cache: "no-store",
     });
     const data = await res.json().catch(() => ({}));
