@@ -176,7 +176,7 @@ export const translations: Record<Locale, TranslationTree> = {
       heroBadge: "Premium plan • US$ 2/month or US$ 18/year",
       heroTitle: "Smart alerts to protect your DeFi wallet.",
       heroDescription:
-        "For just US$ 2/month you receive Telegram alerts about Aave health, liquidation risk and a daily report summarizing your position. Or pay US$ 18/year (equivalent to US$ 1.50 per month).",
+        "For just US$ 2/month you receive Telegram alerts about Aave health, liquidation risk and a daily report summarizing your position, total wallet balance and the Fear & Greed Index. Or pay US$ 18/year (equivalent to US$ 1.50 per month).",
       freePlanTitle: "Free plan",
       freePlanItem1: "- Access to the basic dashboard",
       freePlanItem2: "- Manual check of pools and Aave health",
@@ -184,8 +184,9 @@ export const translations: Record<Locale, TranslationTree> = {
       paidPlanTitle: "Premium SafyApp · US$ 2/month or US$ 18/year",
       paidPlanItem1: "✓ Aave health alerts on Telegram",
       paidPlanItem2: "✓ Liquidation risk warnings",
-      paidPlanItem3: "✓ Automatic daily report",
+      paidPlanItem3: "✓ Automatic daily report with total wallet balance and Fear & Greed Index",
       paidPlanItem4: "✓ Priority support for new features",
+      paidPlanItem5: "✓ Bitcoin price",
       heroFooter:
         "You can cancel at any time. The amount is charged in stablecoin (USDT) on low-cost networks.",
     },
@@ -515,7 +516,7 @@ export const translations: Record<Locale, TranslationTree> = {
       heroBadge: "Plano premium • US$ 2/mês ou US$ 18/ano",
       heroTitle: "Alertas inteligentes para proteger sua carteira DeFi.",
       heroDescription:
-        "Por apenas US$ 2/mês você recebe alertas no Telegram sobre saúde da Aave, risco de liquidação e um relatório diário resumindo sua posição. Se preferir, pague US$ 18/ano (equivalente a US$ 1,50 por mês).",
+        "Por apenas US$ 2/mês você recebe alertas no Telegram sobre saúde da Aave, risco de liquidação e um relatório diário com resumo da posição, saldo total da carteira e o Fear & Greed Index. Se preferir, pague US$ 18/ano (equivalente a US$ 1,50 por mês).",
       freePlanTitle: "Plano gratuito",
       freePlanItem1: "- Acesso ao painel básico",
       freePlanItem2: "- Consulta manual de pools e saúde da Aave",
@@ -523,8 +524,9 @@ export const translations: Record<Locale, TranslationTree> = {
       paidPlanTitle: "Premium SafyApp · US$ 2/mês ou US$ 18/ano",
       paidPlanItem1: "✓ Alertas de saúde da Aave no Telegram",
       paidPlanItem2: "✓ Avisos de risco de liquidação",
-      paidPlanItem3: "✓ Relatório diário automático",
+      paidPlanItem3: "✓ Relatório diário automático com saldo total da carteira e Fear & Greed Index",
       paidPlanItem4: "✓ Suporte prioritário para novidades",
+      paidPlanItem5: "✓ Preço do Bitcoin",
       heroFooter:
         "Você pode cancelar a qualquer momento. O valor é cobrado em stablecoin (USDT) em redes de baixo custo.",
     },

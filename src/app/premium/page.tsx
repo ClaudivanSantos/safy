@@ -40,6 +40,7 @@ export default function PremiumPage() {
                 <li>{t("paidPlanItem2")}</li>
                 <li>{t("paidPlanItem3")}</li>
                 <li>{t("paidPlanItem4")}</li>
+                <li>{t("paidPlanItem5")}</li>
               </ul>
             </div>
           </div>

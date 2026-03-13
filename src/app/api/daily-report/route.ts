@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendTelegramMessage } from "@/services/telegram";
-import { AAVE_NETWORKS, POOL_ABI } from "@/app/saude-defi/aave-config";
+import { AAVE_NETWORKS, AAVE_NETWORK_IDS, POOL_ABI } from "@/app/saude-defi/aave-config";
 import {
   createPublicClient,
   http,
@@ -56,54 +56,100 @@ function isPremiumActive(premium_expires_at: Date | string | null | undefined): 
   return d.getTime() > Date.now();
 }
 
-async function fetchAaveAccountDataEthereum(userAddress: `0x${string}`): Promise<UserAccountData | null> {
-  const network = AAVE_NETWORKS.ethereum;
-  const transport = fallback(
-    network.rpcUrls.map((url) => http(url, { timeout: 15_000 }))
-  );
-  const client = createPublicClient({
-    chain: {
-      id: network.chainId,
-      name: network.name,
-      nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-      rpcUrls: { default: { http: network.rpcUrls } },
-    },
-    transport,
-  });
+async function fetchAaveAccountDataAllNetworks(userAddress: `0x${string}`): Promise<UserAccountData | null> {
+  let totalCollateralBase = BigInt(0);
+  let totalDebtBase = BigInt(0);
+  let availableBorrowsBase = BigInt(0);
+  let currentLiquidationThreshold = BigInt(0);
+  let ltv = BigInt(0);
+  let healthFactor = BigInt(0);
 
-  try {
-    const data = encodeFunctionData({
-      abi: POOL_ABI,
-      functionName: "getUserAccountData",
-      args: [userAddress],
-    });
-    const { data: returnData } = await client.call({
-      to: network.poolAddress,
-      data,
-    });
-    if (!returnData) return null;
-    const decoded = decodeAbiParameters(
-      [
-        { type: "uint256" },
-        { type: "uint256" },
-        { type: "uint256" },
-        { type: "uint256" },
-        { type: "uint256" },
-        { type: "uint256" },
-      ],
-      returnData
+  let anySuccess = false;
+
+  for (const id of AAVE_NETWORK_IDS) {
+    const network = AAVE_NETWORKS[id];
+    const transport = fallback(
+      network.rpcUrls.map((url) => http(url, { timeout: 15_000 }))
     );
-    return {
-      totalCollateralBase: decoded[0]!,
-      totalDebtBase: decoded[1]!,
-      availableBorrowsBase: decoded[2]!,
-      currentLiquidationThreshold: decoded[3]!,
-      ltv: decoded[4]!,
-      healthFactor: decoded[5]!,
-    };
-  } catch (err) {
-    console.error("Erro ao buscar dados da Aave (daily-report):", err);
+    const client = createPublicClient({
+      chain: {
+        id: network.chainId,
+        name: network.name,
+        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+        rpcUrls: { default: { http: network.rpcUrls } },
+      },
+      transport,
+    });
+
+    try {
+      const data = encodeFunctionData({
+        abi: POOL_ABI,
+        functionName: "getUserAccountData",
+        args: [userAddress],
+      });
+      const { data: returnData } = await client.call({
+        to: network.poolAddress,
+        data,
+      });
+      if (!returnData) continue;
+      const decoded = decodeAbiParameters(
+        [
+          { type: "uint256" },
+          { type: "uint256" },
+          { type: "uint256" },
+          { type: "uint256" },
+          { type: "uint256" },
+          { type: "uint256" },
+        ],
+        returnData
+      );
+
+      totalCollateralBase += decoded[0]!;
+      totalDebtBase += decoded[1]!;
+      availableBorrowsBase += decoded[2]!;
+      currentLiquidationThreshold += decoded[3]!;
+      ltv += decoded[4]!;
+      healthFactor += decoded[5]!;
+
+      anySuccess = true;
+    } catch (err) {
+      console.error(`Erro ao buscar dados da Aave (daily-report, rede ${network.id}):`, err);
+      continue;
+    }
+  }
+
+  if (!anySuccess) {
     return null;
+  }
+
+  return {
+    totalCollateralBase,
+    totalDebtBase,
+    availableBorrowsBase,
+    currentLiquidationThreshold,
+    ltv,
+    healthFactor,
+  };
+}
+
+async function fetchFearGreedIndex(): Promise<string> {
+  try {
+    const res = await fetch("https://api.alternative.me/fng/?limit=1&format=json", {
+      // pequena cache para evitar bater demais na API
+      next: { revalidate: 60 * 10 },
+    } as RequestInit);
+    if (!res.ok) {
+      return "Indisponível";
+    }
+    const data = (await res.json()) as {
+      data?: { value?: string; value_classification?: string }[];
+    };
+    const item = data.data?.[0];
+    if (!item?.value) return "Indisponível";
+    const classification = item.value_classification ?? "";
+    return classification ? `${item.value} (${classification})` : item.value;
+  } catch {
+    return "Indisponível";
   }
 }
 
@@ -141,6 +187,8 @@ export async function GET(request: Request) {
         }).format(btcPrice)
       : "Indisponível";
 
+    const fearGreedStr = await fetchFearGreedIndex();
+
     let reportsSent = 0;
 
     for (const user of users) {
@@ -156,7 +204,7 @@ export async function GET(request: Request) {
       const addr = user.wallet_address;
       if (!addr || !addr.startsWith("0x") || addr.length !== 42) continue;
 
-      const accountData = await fetchAaveAccountDataEthereum(addr as `0x${string}`);
+      const accountData = await fetchAaveAccountDataAllNetworks(addr as `0x${string}`);
       if (!accountData) continue;
 
       const totalCollateralUsd = toUsdString(accountData.totalCollateralBase);
@@ -167,10 +215,11 @@ export async function GET(request: Request) {
       // Usamos os totais de colateral e dívida como proxy de "saldo da carteira DeFi na Aave".
       const message =
         "📊 Relatório diário SafyApp\n\n" +
-        `Saldo (colateral Aave, Ethereum): US$ ${totalCollateralUsd}\n` +
-        `Dívida Aave (Ethereum): US$ ${totalDebtUsd}\n` +
+        `Saldo total da carteira DeFi (Aave, todas as redes): US$ ${totalCollateralUsd}\n` +
+        `Dívida Aave (todas as redes): US$ ${totalDebtUsd}\n` +
         `Health factor: ${hfStr}\n` +
         `Preço estimado de liquidação (valor do colateral na liquidação): US$ ${liquidationValueUsd}\n` +
+        `Índice Fear & Greed (crypto): ${fearGreedStr}\n` +
         `Preço do Bitcoin: ${btcPriceStr}\n\n` +
         "Dica: mantenha o health factor confortável para reduzir o risco de liquidação." +
         (() => {
