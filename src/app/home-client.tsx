@@ -12,7 +12,7 @@ const FEATURES = [
   {
     title: "Dashboard",
     description: "Visão geral do ecossistema DeFi: TVL total, chains, protocolos e preços em tempo real.",
-    href: "/inicio",
+    href: "/dashboard",
     icon: "📊",
   },
   {

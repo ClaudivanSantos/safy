@@ -9,18 +9,18 @@ import {
   parseUnits,
   parseAbiItem,
 } from "viem";
-import { bsc } from "viem/chains";
-
-const USDT_CONTRACT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955" as const;
-const MIN_USDT_DECIMALS = 18;
-const MIN_USDT_AMOUNT = parseUnits("5", MIN_USDT_DECIMALS);
+import {
+  getPremiumNetwork,
+  type PremiumNetworkId,
+} from "@/lib/premium-networks";
 
 const PAYMENT_ADDRESS_ENV = process.env.PAYMENT_ADDRESS;
-const BNB_RPC_URL = process.env.BNB_RPC_URL ?? "https://bsc-dataseed.binance.org";
 
 const TRANSFER_EVENT = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)"
 );
+
+const BLOCKS_BACK = BigInt(500_000);
 
 export async function POST(request: Request) {
   try {
@@ -43,6 +43,14 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const walletFromBody: string | undefined =
       body.wallet_address ?? body.walletAddress;
+    const networkId = (body.chain_id ?? body.network ?? "bsc") as PremiumNetworkId;
+    const net = getPremiumNetwork(networkId);
+    if (!net) {
+      return NextResponse.json(
+        { error: "Rede inválida. Use bsc, polygon ou arbitrum." },
+        { status: 400 }
+      );
+    }
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.sub },
@@ -59,30 +67,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const rawWallet = (walletFromBody ?? dbUser.wallet_address)?.trim();
+    const rawWallet = (walletFromBody?.trim() || dbUser.wallet_address?.trim())?.trim();
     if (!rawWallet || !isAddress(rawWallet)) {
       return NextResponse.json(
-        { error: "wallet_address inválido ou não informado." },
+        {
+          error:
+            "Endereço da carteira inválido ou não informado. Conecte a carteira.",
+        },
         { status: 400 }
       );
     }
 
     const userWallet = getAddress(rawWallet);
     const paymentAddress = getAddress(PAYMENT_ADDRESS_ENV);
+    const minAmount = parseUnits("2", net.decimals);
 
     const client = createPublicClient({
-      chain: bsc,
-      transport: http(BNB_RPC_URL),
+      chain: {
+        id: net.chainId,
+        name: net.name,
+        nativeCurrency: net.chainParams.nativeCurrency,
+        rpcUrls: { default: { http: [net.rpcUrl] } },
+      },
+      transport: http(net.rpcUrl),
     });
 
     const latestBlock = await client.getBlockNumber();
-    // Procura pagamentos nos últimos ~200k blocos (~alguns dias na BNB Chain).
-    const blocksBack = BigInt(200_000);
     const fromBlock =
-      latestBlock > blocksBack ? latestBlock - blocksBack : BigInt(1);
+      latestBlock > BLOCKS_BACK ? latestBlock - BLOCKS_BACK : BigInt(1);
 
     const logs = await client.getLogs({
-      address: getAddress(USDT_CONTRACT_ADDRESS),
+      address: net.usdtContract,
       event: TRANSFER_EVENT,
       args: {
         from: userWallet,
@@ -97,21 +112,20 @@ export async function POST(request: Request) {
         value: log.args.value as bigint,
         blockNumber: log.blockNumber ?? BigInt(0),
       }))
-      .filter((item) => item.value >= MIN_USDT_AMOUNT)
+      .filter((item) => item.value >= minAmount)
       .sort((a, b) =>
         a.blockNumber === b.blockNumber
           ? 0
           : a.blockNumber < b.blockNumber
-          ? 1
-          : -1
+            ? 1
+            : -1
       )[0];
 
     if (!validLog) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Nenhuma transação de pagamento mínima encontrada. Verifique se enviou ao endereço correto com o valor de 5 USDT ou mais na BNB Chain.",
+          error: `Nenhuma transação de 2 USDT ou mais encontrada na ${net.name}. Verifique o endereço e a rede.`,
         },
         { status: 400 }
       );
@@ -136,9 +150,11 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Erro ao verificar pagamento premium:", err);
     return NextResponse.json(
-      { error: "Erro ao verificar pagamento. Tente novamente em alguns minutos." },
+      {
+        error:
+          "Erro ao verificar pagamento. Tente novamente em alguns minutos.",
+      },
       { status: 500 }
     );
   }
 }
-

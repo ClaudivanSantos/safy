@@ -1,12 +1,12 @@
 {
   "crons": [
     {
-      "path": "/api/aave-monitor",
+      "path": "/api/cron/aave-monitor",
       "schedule": "*/30 * * * *"
     },
     {
-      "path": "/api/daily-report",
-      "schedule": "30 22 * * *"
+      "path": "/api/cron/daily-report",
+      "schedule": "0 10 * * *"
     }
   ]
 }

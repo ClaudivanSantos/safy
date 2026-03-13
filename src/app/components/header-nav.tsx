@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 const LINKS = [
-  { href: "/inicio", label: "Início" },
+  { href: "/dashboard", label: "Dashbaord" },
   { href: "/preco-medio", label: "Preço Médio" },
   { href: "/pools-liquidez", label: "Pools" },
   { href: "/saude-defi", label: "Saúde DeFi (Aave)" },
+  // { href: "/premium", label: "Premium" },
 ];
 
 export function HeaderNav() {

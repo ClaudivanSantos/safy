@@ -21,8 +21,6 @@ import {
   type ProtocolOverview,
   type ChainOverview,
 } from "@/lib/llama-overview";
-import { PremiumVerification } from "@/app/components/premium-verification";
-
 function formatTvl(value: number): string {
   if (!Number.isFinite(value)) return "—";
   if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
@@ -292,9 +290,6 @@ export default function InicioClient() {
             </div>
           )}
         </section>
-
-        {/* Premium SafyApp */}
-        <PremiumVerification />
 
         {/* Footer do dashboard */}
         <p className="text-center text-xs text-foreground/50">

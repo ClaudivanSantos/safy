@@ -1,62 +1,228 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { encodeFunctionData, parseAbiItem } from "viem";
 import { useWallet } from "@/app/contexts/wallet-context";
+import type { PremiumNetworkId } from "@/lib/premium-networks";
 
-type ApiResponse =
-  | { success: true; premiumExpiresAt: string }
-  | { success?: false; error?: string };
+type NetworkOption = {
+  id: PremiumNetworkId;
+  name: string;
+  chainIdHex: string;
+  usdtContract: string;
+  decimals: number;
+  chainParams: {
+    chainId: string;
+    chainName: string;
+    nativeCurrency: { name: string; symbol: string; decimals: number };
+    rpcUrls: string[];
+    blockExplorerUrls: string[];
+  };
+};
+
+type PaymentInfo = {
+  paymentAddress: string;
+  amount: string;
+  currency: string;
+  networks: NetworkOption[];
+  premiumExpiresAt?: string | null;
+};
+
+function WalletIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+    </svg>
+  );
+}
 
 export function PremiumVerification() {
   const { address, connecting, connectWallet } = useWallet();
-  const [loading, setLoading] = useState(false);
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [selectedNetworkId, setSelectedNetworkId] = useState<PremiumNetworkId>("bsc");
+  const [payingLoading, setPayingLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleVerify = async () => {
-    setMessage(null);
+  const canSeePremium = loggedIn === true;
+  const isBlocked = !canSeePremium;
+  const selectedNetwork = paymentInfo?.networks?.find((n) => n.id === selectedNetworkId) ?? paymentInfo?.networks?.[0];
+  const canOpenWallet = canSeePremium && !!address && !!paymentInfo?.paymentAddress && !!selectedNetwork;
 
-    if (!address) {
-      setMessage("Conecte sua carteira no topo da página para verificar o pagamento.");
+  const premiumExpiresAt = paymentInfo?.premiumExpiresAt
+    ? new Date(paymentInfo.premiumExpiresAt)
+    : null;
+  const isPremiumActive =
+    premiumExpiresAt != null && premiumExpiresAt.getTime() > Date.now();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/session", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data: { loggedIn?: boolean }) => {
+        if (!cancelled) setLoggedIn(!!data.loggedIn);
+      })
+      .catch(() => {
+        if (!cancelled) setLoggedIn(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loggedIn) {
+      setPaymentInfo(null);
       return;
     }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/verify-premium-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ wallet_address: address }),
+    let cancelled = false;
+    fetch("/api/premium-payment-info", { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data: PaymentInfo | null) => {
+        if (!cancelled && data?.paymentAddress && data?.networks?.length)
+          setPaymentInfo(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentInfo(null);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [loggedIn]);
 
-      const data = (await res.json().catch(() => ({}))) as ApiResponse;
+  const ensureChain = async (
+    eth: { request: (p: { method: string; params?: unknown[] }) => Promise<unknown> },
+    chainIdHex: string,
+    chainParams: NetworkOption["chainParams"]
+  ): Promise<boolean> => {
+    try {
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: chainIdHex }],
+      });
+      return true;
+    } catch (switchErr: unknown) {
+      const code = (switchErr as { code?: number })?.code;
+      if (code === 4902) {
+        try {
+          await eth.request({
+            method: "wallet_addEthereumChain",
+            params: [chainParams],
+          });
+          return true;
+        } catch {
+          setError("Adicione a rede na sua carteira e tente novamente.");
+          return false;
+        }
+      }
+      setError("Altere a rede na sua carteira e tente novamente.");
+      return false;
+    }
+  };
 
-      if (!res.ok) {
-        const errorMsg =
-          (data as { error?: string }).error ??
-          "Falha ao verificar pagamento. Tente novamente.";
-        setMessage(errorMsg);
+  const handlePayWithWallet = async () => {
+    if (!address || !paymentInfo?.paymentAddress || !selectedNetwork) {
+      setError("Dados de pagamento indisponíveis. Recarregue a página.");
+      return;
+    }
+    setMessage(null);
+    setError(null);
+    setPayingLoading(true);
+    const g = typeof globalThis !== "undefined" ? globalThis : null;
+    const win = g && "window" in g ? (g as unknown as { window: { ethereum?: unknown } }).window : null;
+    const eth = win
+      ? (win as unknown as { ethereum?: { request: (p: { method: string; params?: unknown[] }) => Promise<unknown> } })
+          .ethereum
+      : undefined;
+    if (!eth) {
+      setError("Nenhuma carteira encontrada. Instale MetaMask ou outra wallet compatível.");
+      setPayingLoading(false);
+      return;
+    }
+    const net = selectedNetwork;
+    const amountWei = BigInt(2) * BigInt(10) ** BigInt(net.decimals);
+    try {
+      const okChain = await ensureChain(eth, net.chainIdHex, net.chainParams);
+      if (!okChain) {
+        setPayingLoading(false);
         return;
       }
-
-      if ("success" in data && data.success) {
-        const date = new Date(data.premiumExpiresAt);
-        const formatted = new Intl.DateTimeFormat("pt-BR", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }).format(date);
-        setMessage(`Pagamento confirmado. Premium ativo até ${formatted}.`);
-      } else {
-        const errorMsg =
-          (data as { error?: string }).error ??
-          "Não foi possível confirmar o pagamento.";
-        setMessage(errorMsg);
+      const data = encodeFunctionData({
+        abi: [parseAbiItem("function transfer(address to, uint256 value) returns (bool)")],
+        functionName: "transfer",
+        args: [paymentInfo.paymentAddress as `0x${string}`, amountWei],
+      });
+      const txHash = (await eth.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: address,
+            to: net.usdtContract,
+            data,
+            chainId: net.chainIdHex,
+          },
+        ],
+      })) as string | undefined;
+      if (!txHash || typeof txHash !== "string") {
+        setError("Transação não enviada. Tente novamente.");
+        setPayingLoading(false);
+        return;
       }
-    } catch {
-      setMessage("Erro de rede ao verificar pagamento. Tente novamente em instantes.");
+      setMessage(`Transação enviada. Aguardando confirmação na ${net.name}…`);
+      const maxAttempts = 40;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const rres = await fetch(
+          `/api/tx-receipt?hash=${encodeURIComponent(txHash)}&chain=${net.id}&wallet=${encodeURIComponent(address)}`,
+          { credentials: "include" }
+        ).then((r) => r.json());
+        const payload = rres as {
+          receipt?: { blockNumber?: string; status?: string };
+          premiumExpiresAt?: string;
+        };
+        const res = payload?.receipt;
+        if (res?.blockNumber && res?.status === "0x1") {
+          if (payload.premiumExpiresAt) {
+            const date = new Date(payload.premiumExpiresAt);
+            const formatted = new Intl.DateTimeFormat("pt-BR", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(date);
+            setMessage(`Pagamento confirmado. Premium ativo até ${formatted}.`);
+          } else {
+            setMessage("Pagamento confirmado. Premium ativado.");
+          }
+          setPayingLoading(false);
+          return;
+        }
+      }
+      setMessage("Confirmação está demorando. O premium será ativado em breve.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao enviar transação.";
+      const lower = msg.toLowerCase();
+      if (lower.includes("reject") || lower.includes("denied") || lower.includes("user denied")) {
+        setError("Transação recusada na carteira.");
+      } else {
+        setError(msg || "Erro ao abrir a carteira. Tente novamente.");
+      }
     } finally {
-      setLoading(false);
+      setPayingLoading(false);
     }
   };
 
@@ -65,40 +231,127 @@ export function PremiumVerification() {
       <h2 className="mb-2 text-lg font-semibold text-foreground">
         Premium SafyApp
       </h2>
-      <p className="mb-4 text-sm text-foreground/60">
-        Após realizar o pagamento de 5 USDT na BNB Chain para o endereço indicado,
-        clique abaixo para validar a transação e ativar seu plano premium.
-      </p>
-      {message && (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-          {message}
+
+      {canSeePremium && isPremiumActive && premiumExpiresAt && (
+        <div className="mb-6 rounded-lg border border-primary/30 bg-primary/10 p-5">
+          <p className="mb-2 text-base font-medium text-primary">
+            Obrigado por ser assinante premium!
+          </p>
+          <p className="text-sm text-foreground/90">
+            Seu plano está ativo até{" "}
+            <strong>
+              {new Intl.DateTimeFormat("pt-BR", {
+                dateStyle: "long",
+                timeStyle: "short",
+              }).format(premiumExpiresAt)}
+            </strong>
+            .
+          </p>
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-3">
-        {!address ? (
+
+      {!isPremiumActive && isBlocked && (
+        <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="mb-3 text-sm text-amber-100">
+            Para ativar o premium, faça login e conecte a carteira que usará para
+            pagar.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {!loggedIn && (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover"
+              >
+                Entrar
+              </Link>
+            )}
+            {!address && (
+              <button
+                type="button"
+                onClick={connectWallet}
+                disabled={connecting}
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+              >
+                <WalletIcon className="h-4 w-4 shrink-0" />
+                {connecting ? "Conectando…" : "Conectar"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!isPremiumActive && canSeePremium && !address && (
+        <div className="mb-4">
+          <p className="mb-2 text-sm text-foreground/70">
+            Conecte sua carteira para pagar e ativar o premium.
+          </p>
           <button
             type="button"
             onClick={connectWallet}
             disabled={connecting}
-            className="rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
           >
-            {connecting ? "Conectando carteira…" : "Conectar carteira"}
+            <WalletIcon className="h-4 w-4 shrink-0" />
+            {connecting ? "Conectando…" : "Conectar"}
           </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={handleVerify}
-          disabled={loading}
-          className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover disabled:opacity-60"
-        >
-          {loading ? "Verificando pagamento…" : "Verificar pagamento"}
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-foreground/60">
-        É necessário estar logado na SafyApp e usar a mesma carteira utilizada no
-        pagamento para validação on-chain.
-      </p>
+        </div>
+      )}
+
+      {!isPremiumActive && canSeePremium && paymentInfo && (
+        <>
+          <p className="mb-3 text-sm font-medium text-foreground">
+            Em qual rede deseja pagar?
+          </p>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {paymentInfo.networks.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => setSelectedNetworkId(n.id)}
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  selectedNetworkId === n.id
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
+                }`}
+              >
+                {n.id === "bsc" ? "BNB" : n.id === "polygon" ? "POL" : "ARB"}
+              </button>
+            ))}
+          </div>
+          <p className="mb-2 text-xs text-foreground/60">
+            A carteira será aberta na rede <strong>{selectedNetwork?.name ?? selectedNetworkId}</strong> com 2 USDT preenchidos.
+          </p>
+          {canOpenWallet && (
+            <div className="mb-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handlePayWithWallet}
+                disabled={payingLoading}
+                className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover disabled:opacity-60"
+              >
+                {payingLoading ? "Aguardando confirmação…" : `Abrir carteira e pagar 2 USDT (${selectedNetworkId.toUpperCase()})`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {message && (
+        <div className="mb-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
+      {!isPremiumActive && (
+        <p className="mt-3 text-xs text-foreground/60">
+          É necessário estar logado e conectar a carteira. Ao confirmar o pagamento na carteira, o premium é ativado automaticamente.
+        </p>
+      )}
     </section>
   );
 }
-
