@@ -109,8 +109,11 @@ async function fetchAaveAccountDataEthereum(userAddress: `0x${string}`): Promise
 
 export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const secret = url.searchParams.get("secret");
     const auth = request.headers.get("authorization");
-    if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    const expected = process.env.CRON_SECRET;
+    if (expected && secret !== expected && auth !== `Bearer ${expected}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
