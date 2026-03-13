@@ -55,7 +55,7 @@ export function PremiumVerification() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [selectedNetworkId, setSelectedNetworkId] = useState<PremiumNetworkId>("bsc");
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual");
   const [payingLoading, setPayingLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
