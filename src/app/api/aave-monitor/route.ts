@@ -130,10 +130,6 @@ export async function GET(request: Request) {
       const premiumAtivo = isPremiumActive(user.premium_expires_at);
 
       if (!premiumAtivo) {
-        await sendTelegramMessage(
-          chatId,
-          "Seu plano premium do SafyApp expirou.\n\nRenove para continuar recebendo alertas automáticos."
-        );
         continue;
       }
 

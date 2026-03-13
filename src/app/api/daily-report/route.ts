@@ -129,6 +129,8 @@ export async function GET(request: Request) {
       },
     });
 
+    const now = Date.now();
+
     const prices = await getTokenPricesFromCoinPaprika();
     const btcPrice = prices["BTC"] ?? prices["XBT"] ?? null;
     const btcPriceStr = btcPrice
@@ -148,10 +150,6 @@ export async function GET(request: Request) {
       const premiumAtivo = isPremiumActive(user.premium_expires_at);
 
       if (!premiumAtivo) {
-        await sendTelegramMessage(
-          chatId,
-          "Seu plano premium do SafyApp expirou.\n\nRenove para continuar recebendo alertas automáticos."
-        );
         continue;
       }
 
@@ -174,7 +172,20 @@ export async function GET(request: Request) {
         `Health factor: ${hfStr}\n` +
         `Preço estimado de liquidação (valor do colateral na liquidação): US$ ${liquidationValueUsd}\n` +
         `Preço do Bitcoin: ${btcPriceStr}\n\n` +
-        "Dica: mantenha o health factor confortável para reduzir o risco de liquidação.";
+        "Dica: mantenha o health factor confortável para reduzir o risco de liquidação." +
+        (() => {
+          const expiresAt = user.premium_expires_at;
+          if (!expiresAt) return "";
+          const d =
+            typeof expiresAt === "string" ? new Date(expiresAt) : expiresAt;
+          const diffMs = d.getTime() - now;
+          if (diffMs <= 0) return "";
+          const MS_PER_DAY = 24 * 60 * 60 * 1000;
+          const daysLeft = Math.ceil(diffMs / MS_PER_DAY);
+          if (daysLeft > 5) return "";
+          const plural = daysLeft > 1 ? "dias" : "dia";
+          return `\n\n⚠️ Seu plano premium do SafyApp expira em ${daysLeft} ${plural}. Renove para continuar recebendo alertas automáticos.`;
+        })();
 
       await sendTelegramMessage(chatId, message);
       reportsSent += 1;
