@@ -19,8 +19,14 @@ export async function GET(request: Request) {
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   try {
+    const headers: HeadersInit = {};
+    if (process.env.CRON_SECRET) {
+      headers.authorization = `Bearer ${process.env.CRON_SECRET}`;
+    }
+
     const res = await fetch(`${base}/api/daily-report`, {
       method: "GET",
+      headers,
       cache: "no-store",
     });
     const data = await res.json().catch(() => ({}));
