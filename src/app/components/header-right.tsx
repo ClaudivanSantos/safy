@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useWallet, shortAddress } from "@/app/contexts/wallet-context";
+import { useLanguage } from "@/app/contexts/language-context";
 import { UserMenu } from "./user-menu";
 import { DonationModal } from "./donation-modal";
 import { useTranslation } from "@/app/hooks/use-translation";
@@ -35,8 +36,10 @@ export function HeaderRight({ session, userName }: HeaderRightProps) {
   const [donationOpen, setDonationOpen] = useState(false);
   const { address, connecting, connectWallet, disconnectWallet } = useWallet();
   const { t } = useTranslation("common");
+  const { language, setLanguage } = useLanguage();
 
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
   return (
     <>
@@ -50,6 +53,64 @@ export function HeaderRight({ session, userName }: HeaderRightProps) {
           <span className="sm:hidden">{t("donateShort")}</span>
           <span className="hidden sm:inline">{t("donateLong")}</span>
         </button>
+        <div className="relative hidden md:flex">
+          <button
+            type="button"
+            onClick={() => setLanguageMenuOpen((open) => !open)}
+            className="flex h-8 items-center gap-1 rounded-full border border-border bg-muted/40 px-2 text-xs text-foreground hover:bg-muted"
+            aria-haspopup="menu"
+            aria-expanded={languageMenuOpen}
+            aria-label={language === "en" ? "Switch language" : "Mudar idioma"}
+          >
+            <span aria-hidden>{language === "en" ? "🇺🇸" : "🇧🇷"}</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3 w-3"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              {languageMenuOpen ? (
+                <path d="M5 12.5L10 7.5L15 12.5" strokeLinecap="round" strokeLinejoin="round" />
+              ) : (
+                <path d="M5 7.5L10 12.5L15 7.5" strokeLinecap="round" strokeLinejoin="round" />
+              )}
+            </svg>
+          </button>
+          {languageMenuOpen && (
+            <div className="absolute right-0 top-full z-50 mt-1 w-28 rounded-md border border-border bg-background py-1 text-xs shadow-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  setLanguage("en");
+                  setLanguageMenuOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left ${
+                  language === "en"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted"
+                }`}
+              >
+                <span aria-hidden>🇺🇸</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLanguage("pt-BR");
+                  setLanguageMenuOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left ${
+                  language === "pt-BR"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted"
+                }`}
+              >
+                <span aria-hidden>🇧🇷</span>
+              </button>
+            </div>
+          )}
+        </div>
         {address ? (
           <div className="relative">
             <button

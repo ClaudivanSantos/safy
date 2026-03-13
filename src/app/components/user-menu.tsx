@@ -76,7 +76,7 @@ export function UserMenu({ userName }: UserMenuProps) {
             </p>
           </div>
           <div className="border-t border-border pt-1">
-            <div className="px-4 pb-2 pt-1">
+            <div className="px-4 pb-2 pt-1 md:hidden">
               <p className="mb-1 text-xs font-medium text-foreground/60">
                 {t("langToggleTitle")}
               </p>
@@ -91,7 +91,6 @@ export function UserMenu({ userName }: UserMenuProps) {
                   }`}
                 >
                   <span aria-hidden>🇺🇸</span>
-                  <span>EN</span>
                 </button>
                 <button
                   type="button"
@@ -103,7 +102,6 @@ export function UserMenu({ userName }: UserMenuProps) {
                   }`}
                 >
                   <span aria-hidden>🇧🇷</span>
-                  <span>PT</span>
                 </button>
               </div>
             </div>
