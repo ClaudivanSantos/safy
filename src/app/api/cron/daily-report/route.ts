@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendTelegramMessage } from "@/services/telegram";
 
-const ALERT_CHAT_ID = process.env.CRON_ALERT_TELEGRAM_CHAT_ID;
+const ALERT_CHAT_ID = process.env.ALERT_CHAT_ID;
 
 async function notifyCronError(message: string) {
   if (!ALERT_CHAT_ID) return;
@@ -9,8 +9,8 @@ async function notifyCronError(message: string) {
 }
 
 export async function GET(request: Request) {
-  const isCron = request.headers.get("x-vercel-cron");
-  if (!isCron) {
+  const secret = new URL(request.url).searchParams.get("secret");
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 

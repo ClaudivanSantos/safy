@@ -9,8 +9,8 @@ async function notifyCronError(message: string) {
 }
 
 export async function GET(request: Request) {
-  const isCron = request.headers.get("x-vercel-cron");
-  if (!isCron) {
+  const secret = new URL(request.url).searchParams.get("secret");
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
