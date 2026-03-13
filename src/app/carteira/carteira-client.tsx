@@ -69,6 +69,7 @@ const TOKENS_BY_CHAIN: Record<
       decimals: 6,
     },
   ],
+  ethereum: [],
 };
 
 export default function CarteiraClient() {
