@@ -5,6 +5,7 @@ import Link from "next/link";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { SiBinance, SiPolygon, SiEthereum, SiTelegram } from "react-icons/si";
 import { useWallet } from "@/app/contexts/wallet-context";
+import { useTranslation } from "@/app/hooks/use-translation";
 import type { PremiumNetworkId } from "@/lib/premium-networks";
 
 type NetworkOption = {
@@ -58,6 +59,7 @@ export function PremiumVerification() {
   const [payingLoading, setPayingLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation("premium");
 
   const canSeePremium = loggedIn === true;
   const isBlocked = !canSeePremium;
@@ -129,18 +131,18 @@ export function PremiumVerification() {
           });
           return true;
         } catch {
-          setError("Adicione a rede na sua carteira e tente novamente.");
+          setError(t("addNetworkError"));
           return false;
         }
       }
-      setError("Altere a rede na sua carteira e tente novamente.");
+      setError(t("switchNetworkError"));
       return false;
     }
   };
 
   const handlePayWithWallet = async () => {
     if (!address || !paymentInfo?.paymentAddress || !selectedNetwork) {
-      setError("Dados de pagamento indisponíveis. Recarregue a página.");
+      setError(t("paymentDataError"));
       return;
     }
     setMessage(null);
@@ -153,7 +155,7 @@ export function PremiumVerification() {
           .ethereum
       : undefined;
     if (!eth) {
-      setError("Nenhuma carteira encontrada. Instale MetaMask ou outra wallet compatível.");
+      setError(t("noWalletError"));
       setPayingLoading(false);
       return;
     }
@@ -183,7 +185,7 @@ export function PremiumVerification() {
         ],
       })) as string | undefined;
       if (!txHash || typeof txHash !== "string") {
-        setError("Transação não enviada. Tente novamente.");
+        setError(t("txNotSentError"));
         setPayingLoading(false);
         return;
       }
@@ -207,22 +209,24 @@ export function PremiumVerification() {
               dateStyle: "medium",
               timeStyle: "short",
             }).format(date);
-            setMessage(`Pagamento confirmado. Premium ativo até ${formatted}.`);
+            setMessage(
+              t("paymentConfirmedUntil").replace("{date}", formatted),
+            );
           } else {
-            setMessage("Pagamento confirmado. Premium ativado.");
+            setMessage(t("paymentConfirmed"));
           }
           setPayingLoading(false);
           return;
         }
       }
-      setMessage("Confirmação está demorando. O premium será ativado em breve.");
+      setMessage(t("confirmationSlow"));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao enviar transação.";
+      const msg = err instanceof Error ? err.message : t("txSendError");
       const lower = msg.toLowerCase();
       if (lower.includes("reject") || lower.includes("denied") || lower.includes("user denied")) {
-        setError("Transação recusada na carteira.");
+        setError(t("txRejected"));
       } else {
-        setError(msg || "Erro ao abrir a carteira. Tente novamente.");
+        setError(msg || t("openWalletError"));
       }
     } finally {
       setPayingLoading(false);
@@ -232,7 +236,7 @@ export function PremiumVerification() {
   return (
     <section className="rounded-xl border border-border bg-muted/20 p-6">
       <h2 className="mb-2 text-lg font-semibold text-foreground">
-        Premium SafyApp
+        {t("heading")}
       </h2>
 
       {canSeePremium && isPremiumActive && premiumExpiresAt && (
@@ -243,23 +247,23 @@ export function PremiumVerification() {
             </div>
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-primary/90">
-                Plano premium ativo
+                {t("premiumActiveBadge")}
               </p>
               <p className="text-sm text-foreground/80">
-                Obrigado por apoiar o SafyApp.
+                {t("premiumThanks")}
               </p>
             </div>
           </div>
-          <p className="mb-4 text-sm text-foreground/90">
-            Seu plano está válido até{" "}
-            <strong>
-              {new Intl.DateTimeFormat("pt-BR", {
-                dateStyle: "long",
-                timeStyle: "short",
-              }).format(premiumExpiresAt)}
-            </strong>
-            .
-          </p>
+            <p className="mb-4 text-sm text-foreground/90">
+              {t("premiumValidUntil")}
+              <strong>
+                {new Intl.DateTimeFormat("pt-BR", {
+                  dateStyle: "long",
+                  timeStyle: "short",
+                }).format(premiumExpiresAt)}
+              </strong>
+              .
+            </p>
           <a
             href="https://t.me/safyapp_bot"
             target="_blank"
@@ -267,7 +271,7 @@ export function PremiumVerification() {
             className="inline-flex items-center gap-2 rounded-full bg-[#229ED9] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1b8ac0]"
           >
             <SiTelegram className="h-4 w-4" />
-            Falar com o bot no Telegram
+            {t("telegramCta")}
           </a>
         </div>
       )}
@@ -275,8 +279,7 @@ export function PremiumVerification() {
       {!isPremiumActive && isBlocked && (
         <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
           <p className="mb-3 text-sm text-amber-100">
-            Para ativar o premium, faça login e conecte a carteira que usará para
-            pagar.
+            {t("loginAndConnectWallet")}
           </p>
           <div className="flex flex-wrap items-center gap-3">
             {!loggedIn && (
@@ -284,7 +287,7 @@ export function PremiumVerification() {
                 href="/login"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover"
               >
-                Entrar
+                {t("login")}
               </Link>
             )}
             {!address && (
@@ -295,7 +298,7 @@ export function PremiumVerification() {
                 className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
               >
                 <WalletIcon className="h-4 w-4 shrink-0" />
-                {connecting ? "Conectando…" : "Conectar"}
+                {connecting ? t("connecting") : t("connect")}
               </button>
             )}
           </div>
@@ -305,7 +308,7 @@ export function PremiumVerification() {
       {!isPremiumActive && canSeePremium && !address && (
         <div className="mb-4">
           <p className="mb-2 text-sm text-foreground/70">
-            Conecte sua carteira para pagar e ativar o premium.
+            {t("connectWalletToPay")}
           </p>
           <button
             type="button"
@@ -314,7 +317,7 @@ export function PremiumVerification() {
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
           >
             <WalletIcon className="h-4 w-4 shrink-0" />
-            {connecting ? "Conectando…" : "Conectar"}
+            {connecting ? t("connecting") : t("connect")}
           </button>
         </div>
       )}
@@ -322,34 +325,34 @@ export function PremiumVerification() {
       {!isPremiumActive && canSeePremium && paymentInfo && (
         <>
           <p className="mb-3 text-sm font-medium text-foreground">
-            Qual plano você deseja?
+            {t("whichPlan")}
           </p>
           <div className="mb-4 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setBillingPeriod("monthly")}
-              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                 billingPeriod === "monthly"
                   ? "border-primary bg-primary/20 text-primary"
                   : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
               }`}
-            >
-              <span>Mensal · US$ 2</span>
+              >
+              <span>{t("monthly")}</span>
             </button>
             <button
               type="button"
               onClick={() => setBillingPeriod("annual")}
-              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                 billingPeriod === "annual"
                   ? "border-primary bg-primary/20 text-primary"
                   : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
               }`}
-            >
-              <span>Anual · US$ 18 (US$ 1,50/mês)</span>
+              >
+              <span>{t("annual")}</span>
             </button>
           </div>
           <p className="mb-3 text-sm font-medium text-foreground">
-            Em qual rede deseja pagar?
+            {t("whichNetwork")}
           </p>
           <div className="mb-4 flex flex-wrap gap-2">
             {paymentInfo.networks.map((n) => (
@@ -373,8 +376,14 @@ export function PremiumVerification() {
             ))}
           </div>
           <p className="mb-2 text-xs text-foreground/60">
-            A carteira será aberta na rede <strong>{selectedNetwork?.name ?? selectedNetworkId}</strong>{" "}
-            com {billingPeriod === "annual" ? "18 USDT (plano anual)" : "2 USDT (1 mês)"} preenchidos.
+            {t("walletWillOpen")
+              .replace("{network}", selectedNetwork?.name ?? selectedNetworkId)
+              .replace(
+                "{amount}",
+                billingPeriod === "annual"
+                  ? "18 USDT (annual plan)"
+                  : "2 USDT (1 month)",
+              )}
           </p>
           {canOpenWallet && (
             <div className="mb-4 flex flex-wrap gap-3">
@@ -386,9 +395,17 @@ export function PremiumVerification() {
               >
                 {payingLoading
                   ? "Aguardando confirmação…"
-                  : `Abrir carteira e pagar ${
-                      billingPeriod === "annual" ? "18 USDT (anual)" : "2 USDT (mensal)"
-                    } (${selectedNetworkId.toUpperCase()})`}
+                  : t("openWalletAndPay")
+                      .replace(
+                        "{amount}",
+                        billingPeriod === "annual"
+                          ? "18 USDT (annual)"
+                          : "2 USDT (monthly)",
+                      )
+                      .replace(
+                        "{network}",
+                        selectedNetworkId.toUpperCase(),
+                      )}
               </button>
             </div>
           )}
@@ -408,7 +425,7 @@ export function PremiumVerification() {
 
       {!isPremiumActive && (
         <p className="mt-3 text-xs text-foreground/60">
-          É necessário estar logado e conectar a carteira. Ao confirmar o pagamento na carteira, o premium é ativado automaticamente.
+          {t("infoLoggedAndConnected")}
         </p>
       )}
     </section>

@@ -5,6 +5,7 @@ import { createPublicClient, http, fallback, formatUnits, isAddress, encodeFunct
 import { mainnet, polygon, arbitrum } from "viem/chains";
 import { SiEthereum, SiPolygon } from "react-icons/si";
 import { useWallet, shortAddress } from "@/app/contexts/wallet-context";
+import { useTranslation } from "@/app/hooks/use-translation";
 import {
   AAVE_NETWORKS,
   AAVE_NETWORK_IDS,
@@ -164,6 +165,8 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
     Record<AaveNetworkId, { accountData: UserAccountData; collaterals: CollateralRow[]; debts: DebtRow[] } | { error: string } | null>
   >({ ethereum: null, polygon: null, arbitrum: null });
 
+  const { t } = useTranslation("defiHealthPage");
+
   /** Busca dados da Aave para uma rede e retorna (não seta estado). Em falha de UiPoolDataProvider, retorna accountData com colaterais/dívidas vazios (comportamento tipo tela de pools). */
   const fetchAaveDataForNetwork = useCallback(
     async (
@@ -316,7 +319,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
   const handleVerificar = async () => {
     setError(null);
     if (!connectedAddress) {
-      setError("Conecte a carteira no header para verificar sua posição na Aave.");
+      setError(t("connectHeader"));
       return;
     }
     if (!isAddress(connectedAddress)) {
@@ -336,7 +339,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
           next[networkId] = data;
         } catch (err) {
           next[networkId] = {
-            error: err instanceof Error ? err.message : "Erro ao buscar dados na Aave.",
+            error: err instanceof Error ? err.message : t("errorDefault"),
           };
         }
       })
@@ -360,7 +363,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
             next[networkId] = data;
           } catch (err) {
             next[networkId] = {
-              error: err instanceof Error ? err.message : "Erro ao buscar dados na Aave.",
+              error: err instanceof Error ? err.message : t("errorDefault"),
             };
           }
         })
@@ -381,17 +384,17 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
           <h1 className="relative text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Saúde DeFi — Aave
+            {t("headerTitle")}
           </h1>
           <p className="relative mt-2 text-foreground/70">
-            Verifique sua posição na Aave V3 em todas as redes: health factor, colateral, dívida e preço de liquidação. Conecte a carteira no header e clique em Verificar.
+            {t("headerDescription")}
           </p>
         </header>
 
         {/* Entrada */}
         <section className="rounded-xl border border-border bg-muted/20 p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Verificar posição
+            {t("checkSectionTitle")}
           </h2>
           {error && (
             <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -413,17 +416,17 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   disabled={loading}
                   className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
                 >
-                  {loading ? "Buscando em todas as redes…" : "Verificar posição em todas as redes"}
+                  {loading ? t("loadingAllNetworks") : t("checkAllNetworks")}
                 </button>
               </>
             ) : (
               <p className="text-sm text-foreground/60">
-                Conecte a carteira no header para verificar sua posição na Aave.
+                {t("connectHeader")}
               </p>
             )}
           </div>
           <p className="mt-2 text-xs text-foreground/60">
-            Os dados são buscados via RPC em Ethereum, Polygon e Arbitrum. Redes sem posição exibem &quot;Nenhuma posição nesta rede&quot;.
+            {t("rpcInfo")}
           </p>
         </section>
 
@@ -466,7 +469,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                   )}
                   {!isError && !hasPosition && (
                     <p className="text-sm text-foreground/60">
-                      Nenhuma posição na Aave nesta rede.
+                      {t("noPositionThisNetwork")}
                     </p>
                   )}
                   {!isError && hasPosition && data && (
@@ -493,7 +496,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
         {/* Links */}
         <section className="rounded-xl border border-border bg-muted/20 p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Links
+            {t("linksTitle")}
           </h2>
           <a
             href="https://app.aave.com"
@@ -501,7 +504,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover"
           >
-            Abrir posição na Aave
+            {t("openOnAave")}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -551,29 +554,30 @@ function AaveNetworkBlock({
   getLiquidationData: (account: UserAccountData) => { liquidationCollateralBase: bigint; dropPercent: number };
 }) {
   const hasPosition = accountData.totalCollateralBase > BigInt(0) || accountData.totalDebtBase > BigInt(0);
+  const { t } = useTranslation("defiHealthPage");
   return (
     <div className="mt-4 space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
-          <p className="text-xs text-foreground/60">Health Factor</p>
+          <p className="text-xs text-foreground/60">{t("hfLabel")}</p>
           <p className="text-lg font-semibold text-primary">
             {formatHealthFactor(accountData.healthFactor, accountData.totalDebtBase)}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
-          <p className="text-xs text-foreground/60">Total colateral</p>
+          <p className="text-xs text-foreground/60">{t("totalCollateralLabel")}</p>
           <p className="text-lg font-semibold text-foreground">
             ${formatUsd(formatBaseCurrency(accountData.totalCollateralBase))}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
-          <p className="text-xs text-foreground/60">Total dívida</p>
+          <p className="text-xs text-foreground/60">{t("totalDebtLabel")}</p>
           <p className="text-lg font-semibold text-foreground">
             ${formatUsd(formatBaseCurrency(accountData.totalDebtBase))}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-background/50 p-4 transition hover:border-accent/40">
-          <p className="text-xs text-foreground/60">LTV / LT</p>
+          <p className="text-xs text-foreground/60">{t("ltvLabel")}</p>
           <p className="text-lg font-semibold text-foreground">
             {(Number(accountData.ltv) / 100).toFixed(0)}% / {(Number(accountData.currentLiquidationThreshold) / 100).toFixed(0)}%
           </p>
@@ -582,19 +586,23 @@ function AaveNetworkBlock({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-muted/20 p-4">
-          <h3 className="mb-2 text-sm font-medium text-foreground/90">Colaterais</h3>
+          <h3 className="mb-2 text-sm font-medium text-foreground/90">{t("collateralsTitle")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-border text-foreground/70">
-                  <th className="pb-2 pr-4 font-medium">Ativo</th>
-                  <th className="pb-2 pr-4 font-medium">Saldo</th>
-                  <th className="pb-2 font-medium">Valor</th>
+                  <th className="pb-2 pr-4 font-medium">{t("tableAsset")}</th>
+                  <th className="pb-2 pr-4 font-medium">{t("tableBalance")}</th>
+                  <th className="pb-2 font-medium">{t("tableValue")}</th>
                 </tr>
               </thead>
               <tbody className="text-foreground/80">
                 {collaterals.length === 0 && (
-                  <tr><td colSpan={3} className="py-3 text-center text-foreground/50">—</td></tr>
+                  <tr>
+                    <td colSpan={3} className="py-3 text-center text-foreground/50">
+                      {t("noRows")}
+                    </td>
+                  </tr>
                 )}
                 {collaterals.map((c) => (
                   <tr key={c.asset} className="border-b border-border/50">
@@ -608,19 +616,23 @@ function AaveNetworkBlock({
           </div>
         </div>
         <div className="rounded-xl border border-border bg-muted/20 p-4">
-          <h3 className="mb-2 text-sm font-medium text-foreground/90">Empréstimos</h3>
+          <h3 className="mb-2 text-sm font-medium text-foreground/90">{t("debtsTitle")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-border text-foreground/70">
-                  <th className="pb-2 pr-4 font-medium">Ativo</th>
-                  <th className="pb-2 pr-4 font-medium">Dívida</th>
-                  <th className="pb-2 font-medium">Taxa</th>
+                  <th className="pb-2 pr-4 font-medium">{t("tableAsset")}</th>
+                  <th className="pb-2 pr-4 font-medium">{t("tableDebt")}</th>
+                  <th className="pb-2 font-medium">{t("tableRate")}</th>
                 </tr>
               </thead>
               <tbody className="text-foreground/80">
                 {debts.length === 0 && (
-                  <tr><td colSpan={3} className="py-3 text-center text-foreground/50">—</td></tr>
+                  <tr>
+                    <td colSpan={3} className="py-3 text-center text-foreground/50">
+                      {t("noRows")}
+                    </td>
+                  </tr>
                 )}
                 {debts.map((d) => (
                   <tr key={d.asset} className="border-b border-border/50">
@@ -645,7 +657,7 @@ function AaveNetworkBlock({
                 liquidationMode === "coupled" ? "border-primary bg-primary/20 text-primary" : "border-border bg-background text-foreground/80 hover:bg-muted/50"
               }`}
             >
-              Coupled
+              {t("coupledMode")}
             </button>
             <button
               type="button"
@@ -654,7 +666,7 @@ function AaveNetworkBlock({
                 liquidationMode === "single-asset" ? "border-primary bg-primary/20 text-primary" : "border-border bg-background text-foreground/80 hover:bg-muted/50"
               }`}
             >
-              Single-asset
+              {t("singleAssetMode")}
             </button>
           </div>
           {(() => {
@@ -663,11 +675,15 @@ function AaveNetworkBlock({
             return (
               <>
                 <div className="rounded-lg border border-border bg-background/50 p-3">
-                  <p className="text-xs text-foreground/60">Preço de liquidação (estimado)</p>
+                  <p className="text-xs text-foreground/60">
+                    {t("liquidationPriceLabel")}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-foreground">${liquidationValueUsd}</p>
                 </div>
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                  <p className="text-xs font-medium text-amber-200/90">Queda até liquidação</p>
+                  <p className="text-xs font-medium text-amber-200/90">
+                    {t("dropUntilLiquidationLabel")}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-amber-200">{dropPercent.toFixed(1)}%</p>
                 </div>
               </>

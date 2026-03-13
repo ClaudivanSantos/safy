@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPublicClient, formatUnits, http, type Chain } from "viem";
 import { useWallet, shortAddress } from "@/app/contexts/wallet-context";
+import { useTranslation } from "@/app/hooks/use-translation";
 import { SiBinance, SiEthereum, SiPolygon } from "react-icons/si";
 import {
   PREMIUM_NETWORKS,
@@ -73,6 +74,7 @@ const TOKENS_BY_CHAIN: Record<
 export default function CarteiraClient() {
   const { address, connecting, connectWallet } = useWallet();
   const [state, setState] = useState<State>({ status: "idle" });
+  const { t } = useTranslation("wallet");
 
   const hasAddress = !!address;
 
@@ -80,7 +82,7 @@ export default function CarteiraClient() {
     if (!address) {
       setState({
         status: "error",
-        message: "Conecte a carteira no topo da tela para ver os tokens.",
+        message: t("errorNoAddress"),
       });
       return;
     }
@@ -167,8 +169,7 @@ export default function CarteiraClient() {
       if (!items.length) {
         setState({
           status: "error",
-          message:
-            "Nenhum saldo encontrado nas redes suportadas (BNB Chain, Polygon, Arbitrum) para os tokens nativos, USDT ou USDC.",
+          message: t("noBalances"),
         });
       } else {
         // ordenar por rede e depois por símbolo
@@ -183,12 +184,10 @@ export default function CarteiraClient() {
       }
     } catch (err) {
       const msg =
-        err instanceof Error
-          ? err.message
-          : "Erro ao buscar tokens da carteira.";
+        err instanceof Error ? err.message : t("fetchErrorDefault");
       setState({
         status: "error",
-        message: msg || "Erro ao buscar tokens da carteira.",
+        message: msg || t("fetchErrorDefault"),
       });
     }
   }
@@ -202,11 +201,10 @@ export default function CarteiraClient() {
           <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-                Carteira
+                {t("title")}
               </h1>
               <p className="mt-2 max-w-xl text-sm text-foreground/70 md:text-base">
-                Veja rapidamente os principais tokens da sua carteira nas redes
-                suportadas (nativo, USDT e USDC em BNB Chain, Polygon e Arbitrum).
+                {t("description")}
               </p>
             </div>
             <div className="flex flex-col items-start gap-3 md:items-end">
@@ -222,8 +220,8 @@ export default function CarteiraClient() {
                     className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover disabled:opacity-60"
                   >
                     {state.status === "loading"
-                      ? "Atualizando saldos…"
-                      : "Atualizar saldos"}
+                      ? t("updatingBalances")
+                      : t("updateBalances")}
                   </button>
                 </>
               ) : (
@@ -233,7 +231,7 @@ export default function CarteiraClient() {
                   disabled={connecting}
                   className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover disabled:opacity-60"
                 >
-                  {connecting ? "Conectando carteira…" : "Conectar carteira"}
+                  {connecting ? t("connectingWallet") : t("connectWallet")}
                 </button>
               )}
             </div>
@@ -244,8 +242,7 @@ export default function CarteiraClient() {
         {!hasAddress && (
           <section className="rounded-xl border border-border bg-muted/20 p-6">
             <p className="text-sm text-foreground/70">
-              Conecte sua carteira no topo da tela para listar automaticamente
-              os tokens suportados.
+              {t("connectInfo")}
             </p>
           </section>
         )}
@@ -253,11 +250,7 @@ export default function CarteiraClient() {
         {hasAddress && state.status === "idle" && (
           <section className="rounded-xl border border-border bg-muted/20 p-6">
             <p className="text-sm text-foreground/70">
-              Clique em{" "}
-              <span className="font-semibold text-foreground">
-                Atualizar saldos
-              </span>{" "}
-              para consultar os tokens presentes na sua carteira.
+              {t("clickUpdate")}
             </p>
           </section>
         )}

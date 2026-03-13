@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { isAddress } from "viem";
 import { SiEthereum, SiBinance, SiPolygon } from "react-icons/si";
 import { useWallet } from "@/app/contexts/wallet-context";
+import { useTranslation } from "@/app/hooks/use-translation";
 import {
   POOL_NETWORKS,
   POOL_NETWORK_IDS,
@@ -59,10 +60,12 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
     arbitrum: null,
   });
 
+  const { t } = useTranslation("pools");
+
   const handleVerificar = async () => {
     setError(null);
     if (!connectedAddress) {
-      setError("Conecte a carteira no header para ver suas posições em todas as redes.");
+      setError(t("connectHeader"));
       return;
     }
 
@@ -81,7 +84,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
           );
           if (!res.ok) {
             const err = (await res.json().catch(() => ({}))) as { error?: string };
-            throw new Error(err.error ?? `Erro ${res.status}`);
+            throw new Error(err.error ?? t("errorLoading"));
           }
           const data = (await res.json()) as Array<{
             chain: string;
@@ -176,16 +179,16 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
           <h1 className="relative text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Pools de Liquidez
+            {t("headerTitle")}
           </h1>
           <p className="relative mt-2 text-foreground/70">
-            Conecte a carteira no header e clique em Ver minhas posições. Consultamos Ethereum, BNB Chain, Polygon e Arbitrum via RPC; redes sem posição exibem &quot;Nenhuma posição nesta rede&quot;.
+            {t("headerDescription")}
           </p>
         </header>
 
         <section className="rounded-xl border border-border bg-muted/20 p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Minhas posições
+            {t("myPositions")}
           </h2>
           {error && (
             <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -207,12 +210,12 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
                   disabled={loading}
                   className="rounded-lg bg-primary px-4 py-2.5 font-medium text-black hover:bg-primary-hover disabled:opacity-50"
                 >
-                  {loading ? "Buscando em todas as redes…" : "Ver minhas posições em todas as redes"}
+                  {loading ? t("loadingAllNetworks") : t("viewAllNetworks")}
                 </button>
               </>
             ) : (
               <p className="text-sm text-foreground/60">
-                Conecte a carteira no header para ver suas posições.
+                {t("connectHeader")}
               </p>
             )}
           </div>
@@ -239,7 +242,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
               </h2>
               {pools.length === 0 ? (
                 <p className="py-4 text-center text-sm text-foreground/50">
-                  Nenhuma posição nesta rede.
+                  {t("noPositionThisNetwork")}
                 </p>
               ) : (
                 <ul className="space-y-4">
@@ -256,25 +259,25 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
                       </div>
                       <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                         <div className="rounded border border-border/50 bg-muted/20 p-2">
-                          <span className="text-foreground/60">Preço</span>
+                          <span className="text-foreground/60">{t("price")}</span>
                           <p className="font-medium text-foreground">
                             ${Number(pool.priceUsd).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
                           </p>
                         </div>
                         <div className="rounded border border-border/50 bg-muted/20 p-2">
-                          <span className="text-foreground/60">Liquidez</span>
+                          <span className="text-foreground/60">{t("liquidity")}</span>
                           <p className="font-medium text-foreground">{formatUsd(pool.liquidityUsd)}</p>
                         </div>
                         <div className="rounded border border-border/50 bg-muted/20 p-2">
-                          <span className="text-foreground/60">Volume 24h</span>
+                          <span className="text-foreground/60">{t("volume24h")}</span>
                           <p className="font-medium text-foreground">{formatUsd(pool.volume24h)}</p>
                         </div>
                         <div className="rounded border border-border/50 bg-muted/20 p-2">
-                          <span className="text-foreground/60">APY</span>
+                          <span className="text-foreground/60">{t("apy")}</span>
                           <p className="font-medium text-foreground">{formatApy(pool.apy)}</p>
                         </div>
                         <div className="rounded border border-border/50 bg-muted/20 p-2 sm:col-span-2">
-                          <span className="text-foreground/60">Valor da posição</span>
+                          <span className="text-foreground/60">{t("positionValue")}</span>
                           <p className="font-medium text-primary">
                             {formatUsd(pool.valueUsd)}
                           </p>
@@ -287,7 +290,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                         >
-                          Abrir na Krystal
+                          {t("openInKrystal")}
                           <ExternalLinkIcon />
                         </a>
                       </div>
@@ -301,10 +304,10 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
 
         <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
           <p className="text-sm font-medium text-amber-200/90">
-            Múltiplas redes (RPC + Dexscreener + DefiLlama)
+            {t("multiNetworkTitle")}
           </p>
           <p className="mt-1 text-xs text-amber-200/80">
-            As posições são consultadas automaticamente em Ethereum, BNB Chain, Polygon e Arbitrum. Redes sem posição mostram &quot;Nenhuma posição nesta rede&quot;.
+            {t("multiNetworkDescription")}
           </p>
         </section>
       </div>

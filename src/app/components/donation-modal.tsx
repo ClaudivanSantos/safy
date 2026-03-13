@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
-import { createPortal } from "react-dom";
-
-type Doc = {
-  addEventListener: (type: string, handler: EventListener) => void;
-  removeEventListener: (type: string, handler: EventListener) => void;
-  body: { style: { overflow: string } };
-};
+import { useCallback, useState } from "react";
+import { useTranslation } from "@/app/hooks/use-translation";
 
 const DONATION_ADDRESSES = {
   lightning:
@@ -27,11 +21,7 @@ export function DonationModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { t } = useTranslation("donation");
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -46,31 +36,11 @@ export function DonationModal({
     }
   }, []);
 
-  useEffect(() => {
-    const doc: Doc | null =
-      typeof globalThis !== "undefined"
-        ? (globalThis as unknown as { document?: Doc }).document ?? null
-        : null;
-    const handleEscape = (e: { key: string }) => {
-      if (e.key === "Escape") onClose();
-    };
-    if (open && doc) {
-      doc.addEventListener("keydown", handleEscape as unknown as EventListener);
-      doc.body.style.overflow = "hidden";
-    }
-    return () => {
-      if (doc) {
-        doc.removeEventListener("keydown", handleEscape as unknown as EventListener);
-        doc.body.style.overflow = "";
-      }
-    };
-  }, [open, onClose]);
-
   if (!open) return null;
 
-  const modalContent = (
+  return (
     <div
-      className="fixed inset-0 z-100 flex min-h-screen min-w-full items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-50 flex min-h-screen min-w-full items-center justify-center bg-black/70 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -82,52 +52,46 @@ export function DonationModal({
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 id="donation-modal-title" className="text-lg font-semibold text-foreground">
-            Apoiar o Safy
+            {t("title")}
           </h2>
           <button
             type="button"
             onClick={onClose}
             className="rounded p-1 text-foreground/70 hover:bg-muted hover:text-foreground"
-            aria-label="Fechar"
+            aria-label={t("closeAria")}
           >
             ✕
           </button>
         </div>
         <p className="mb-4 text-sm text-foreground/80">
-          Escolha como deseja contribuir:
+          {t("chooseHow")}
         </p>
         <div className="space-y-4">
           <DonationOption
-            label="Lightning (BTC)"
-            description="Rede Lightning — instantâneo e com taxas baixas"
+            label={t("lightningLabel")}
+            description={t("lightningDescription")}
             value={DONATION_ADDRESSES.lightning}
             onCopy={copyToClipboard}
+            t={t}
           />
           <DonationOption
-            label="Bitcoin (on-chain)"
-            description="Endereço BTC nativo"
+            label={t("btcLabel")}
+            description={t("btcDescription")}
             value={DONATION_ADDRESSES.btc}
             onCopy={copyToClipboard}
+            t={t}
           />
           <DonationOption
-            label="EVM (ETH, MATIC, etc.)"
-            description="Ethereum, Polygon e outras redes compatíveis"
+            label={t("evmLabel")}
+            description={t("evmDescription")}
             value={DONATION_ADDRESSES.evm}
             onCopy={copyToClipboard}
+            t={t}
           />
         </div>
       </div>
     </div>
   );
-
-  if (mounted && typeof globalThis !== "undefined") {
-    const body = (globalThis as unknown as { document?: { body?: Element } }).document?.body;
-    if (body) {
-      return createPortal(modalContent, body);
-    }
-  }
-
-  return modalContent;
 }
 
 function DonationOption({
@@ -135,11 +99,13 @@ function DonationOption({
   description,
   value,
   onCopy,
+  t,
 }: {
   label: string;
   description: string;
   value: string;
   onCopy: (text: string) => Promise<boolean>;
+  t: (k: string) => string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -164,7 +130,7 @@ function DonationOption({
           onClick={handleCopy}
           className="shrink-0 rounded bg-primary px-3 py-1.5 text-xs font-medium text-black hover:bg-primary-hover"
         >
-          {copied ? "Copiado!" : "Copiar"}
+          {copied ? t("copied") : t("copy")}
         </button>
       </div>
     </div>

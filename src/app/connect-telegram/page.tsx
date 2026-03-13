@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { useTranslation } from "@/app/hooks/use-translation";
 
 type ApiResponse = { message?: string; error?: string };
 
@@ -12,10 +13,11 @@ export default function ConnectTelegramPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation("telegram");
 
   useEffect(() => {
     if (!chatId) {
-      setError("chat_id ausente na URL. Abra o link diretamente a partir da conversa com o bot.");
+      setError(t("missingChatId"));
       setStatus("done");
       return;
     }
@@ -43,15 +45,15 @@ export default function ConnectTelegramPage() {
           const msg =
             data.error ??
             (res.status === 401
-              ? "Você precisa estar logado na SafyApp para conectar o Telegram."
-              : "Falha ao conectar Telegram. Tente novamente.");
+              ? t("mustBeLogged")
+              : t("failedConnect"));
           setError(msg);
         } else {
-          setMessage(data.message ?? "Telegram conectado com sucesso.");
+          setMessage(data.message ?? t("success"));
         }
       } catch {
         if (cancelled) return;
-        setError("Erro de rede ao conectar Telegram. Tente novamente em instantes.");
+        setError(t("networkError"));
       } finally {
         if (!cancelled) setStatus("done");
       }
@@ -75,11 +77,11 @@ export default function ConnectTelegramPage() {
           className="mx-auto block rounded"
         />
         <h1 className="text-xl font-semibold text-foreground">
-          Conectar Telegram
+          {t("title")}
         </h1>
         {status === "loading" && (
           <p className="text-sm text-foreground/70">
-            Conectando seu Telegram à sua conta SafyApp…
+            {t("connecting")}
           </p>
         )}
         {message && (
@@ -94,12 +96,11 @@ export default function ConnectTelegramPage() {
         )}
         {!message && !error && status === "done" && (
           <p className="text-sm text-foreground/70">
-            Nada para fazer no momento. Acesse o link diretamente do bot no Telegram para conectar sua conta.
+            {t("nothingToDo")}
           </p>
         )}
         <p className="mt-2 text-xs text-foreground/60">
-          Dica: se você ainda não estiver logado na SafyApp, faça login em outra
-          aba e volte para este link.
+          {t("hint")}
         </p>
       </main>
     </div>

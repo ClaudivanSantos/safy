@@ -5,6 +5,7 @@ import { SerwistProvider } from "./serwist";
 import { AuthHeader } from "./components/auth-header";
 import { ValidacaoGuard } from "./components/validacao-guard";
 import { WalletProvider } from "./contexts/wallet-context";
+import { LanguageProvider } from "./contexts/language-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Safy",
-  description: "Ferramenta gratuita para decisões mais seguras em DeFi.",
+  description: "Free tool for safer decisions in DeFi.",
   applicationName: "Safy",
   manifest: "/manifest.json",
 
@@ -48,19 +49,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
         suppressHydrationWarning
       >
         <SerwistProvider swUrl="/serwist/sw.js">
           <WalletProvider>
-            <AuthHeader />
-            <ValidacaoGuard>
-              <div className="flex h-screen flex-col overflow-hidden pt-12">
-                <main className="min-h-0 flex-1 overflow-auto">{children}</main>
-              </div>
-            </ValidacaoGuard>
+            <LanguageProvider>
+              <AuthHeader />
+              <ValidacaoGuard>
+                <div className="flex h-screen flex-col overflow-hidden pt-12">
+                  <main className="min-h-0 flex-1 overflow-auto">
+                    {children}
+                  </main>
+                </div>
+              </ValidacaoGuard>
+            </LanguageProvider>
           </WalletProvider>
         </SerwistProvider>
       </body>

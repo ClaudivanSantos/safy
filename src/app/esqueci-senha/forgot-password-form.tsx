@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslation } from "../hooks/use-translation";
 
 type ForgotStep = "token" | "newPassword" | "done";
 
@@ -18,6 +19,7 @@ export function ForgotPasswordForm() {
   const [recoveryToken, setRecoveryToken] = useState("");
   const [recoveredNome, setRecoveredNome] = useState("");
   const [newSenha, setNewSenha] = useState("");
+  const { t } = useTranslation("authForgot");
 
   async function handleForgotToken(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +33,7 @@ export function ForgotPasswordForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Token inválido.");
+        setError(data.error ?? t("tokenInvalid"));
         setLoading(false);
         return;
       }
@@ -39,7 +41,7 @@ export function ForgotPasswordForm() {
       setForgotStep("newPassword");
       setLoading(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao validar token.");
+      setError(e instanceof Error ? e.message : t("errorValidateToken"));
       setLoading(false);
     }
   }
@@ -56,7 +58,7 @@ export function ForgotPasswordForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Erro ao redefinir senha.");
+        setError(data.error ?? t("errorResetPassword"));
         setLoading(false);
         return;
       }
@@ -64,7 +66,7 @@ export function ForgotPasswordForm() {
       setForgotStep("done");
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao redefinir senha.");
+      setError(e instanceof Error ? e.message : t("errorResetPassword"));
       setLoading(false);
     }
   }
@@ -73,10 +75,10 @@ export function ForgotPasswordForm() {
     return (
       <div className="space-y-4">
         <p className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
-          Senha alterada com sucesso. Entre com sua nova senha.
+          {t("successMessage")}
         </p>
         <Link href="/login" className={`block w-full text-center ${btnPrimary}`}>
-          Ir para entrar
+          {t("goToLogin")}
         </Link>
       </div>
     );
@@ -91,12 +93,14 @@ export function ForgotPasswordForm() {
         <p className="text-sm text-foreground/90">
           Usuário: <strong>{recoveredNome}</strong>
         </p>
-        <label className="block text-sm font-medium text-foreground/90">Nova senha</label>
+        <label className="block text-sm font-medium text-foreground/90">
+          {t("newPasswordLabel")}
+        </label>
         <input
           type="password"
           required
           minLength={6}
-          placeholder="Mínimo 6 caracteres"
+          placeholder={t("newPasswordPlaceholder")}
           value={newSenha}
           onChange={(e) => setNewSenha((e.target as unknown as { value: string }).value)}
           className={inputClass}
@@ -112,10 +116,10 @@ export function ForgotPasswordForm() {
             }}
             className={btnSecondary}
           >
-            Voltar
+            {t("back")}
           </button>
           <button type="submit" disabled={loading} className={`flex-1 ${btnPrimary}`}>
-            {loading ? "Salvando..." : "Definir nova senha"}
+            {loading ? t("saving") : t("setNewPassword")}
           </button>
         </div>
       </form>
@@ -127,24 +131,24 @@ export function ForgotPasswordForm() {
       {error && (
         <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
       )}
-      <p className="text-sm text-foreground/80">
-        Informe o token de recuperação que você recebeu ao criar a conta. Em seguida você poderá definir uma nova senha.
-      </p>
-      <label className="block text-sm font-medium text-foreground/90">Token de recuperação</label>
+      <p className="text-sm text-foreground/80">{t("introText")}</p>
+      <label className="block text-sm font-medium text-foreground/90">
+        {t("tokenLabel")}
+      </label>
       <input
         type="password"
         required
-        placeholder="Cole seu token aqui"
+        placeholder={t("tokenPlaceholder")}
         value={recoveryToken}
         onChange={(e) => setRecoveryToken((e.target as unknown as { value: string }).value)}
         className={`${inputClass} font-mono`}
       />
       <div className="flex gap-2">
         <Link href="/login" className={btnSecondary}>
-          Voltar
+          {t("back")}
         </Link>
         <button type="submit" disabled={loading} className={`flex-1 ${btnPrimary}`}>
-          {loading ? "Validando..." : "Continuar"}
+          {loading ? t("validateLoading") : t("continue")}
         </button>
       </div>
     </form>
