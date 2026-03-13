@@ -368,9 +368,17 @@ export function PremiumVerification() {
               >
                 {n.id === "bsc" && <SiBinance className="h-4 w-4" />}
                 {n.id === "polygon" && <SiPolygon className="h-4 w-4" />}
-                {n.id === "arbitrum" && <SiEthereum className="h-4 w-4" />}
+                {(n.id === "arbitrum" || n.id === "ethereum") && (
+                  <SiEthereum className="h-4 w-4" />
+                )}
                 <span>
-                  {n.id === "bsc" ? "BNB" : n.id === "polygon" ? "POL" : "ARB"}
+                  {n.id === "bsc"
+                    ? "BNB"
+                    : n.id === "polygon"
+                      ? "POL"
+                      : n.id === "arbitrum"
+                        ? "ARB"
+                        : "ETH"}
                 </span>
               </button>
             ))}
