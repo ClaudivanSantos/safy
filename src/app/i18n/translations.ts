@@ -168,6 +168,7 @@ export const translations: Record<Locale, TranslationTree> = {
         "The wallet will open on the {network} network with {amount} filled in.",
       openWalletAndPay:
         "Open wallet and pay {amount} ({network})",
+      waitingConfirmation: "Waiting for confirmation…",
       infoLoggedAndConnected:
         "You need to be logged in and connect your wallet. After confirming the payment in the wallet, premium is activated automatically.",
       loadingPaymentOptions: "Loading payment options…",
@@ -192,10 +193,35 @@ export const translations: Record<Locale, TranslationTree> = {
       paidPlanItem4: "✓ Priority support for new features",
       paidPlanItem5: "✓ Bitcoin price",
       paidPlanItem6: "✓ Premium Pools (range alerts) — US$ 2/month",
-      poolPremiumHeading: "Premium Pools · US$ 2/month",
+      poolPremiumHeading: "Liquidity pools premium · US$ 2/month",
       poolPremiumDescription:
-        "Receive Telegram alerts when a Uniswap V3 liquidity position goes out of range (range min, range max and current price).",
-      poolPremiumActiveBadge: "Premium Pools active",
+        "Receive daily Telegram alerts about your pool and when a Uniswap V3 liquidity pool position goes out of range (range min, range max and current price).",
+      poolPremiumActiveBadge: "Liquidity pools premium active",
+      poolLoginAndConnectWallet:
+        "To activate liquidity pools premium, sign in and connect the wallet you will use to pay.",
+      poolConnectWalletToPay:
+        "Connect your wallet to pay and activate liquidity pools premium.",
+      poolPremiumValidUntil: "Your liquidity pools plan is valid until ",
+      poolPaymentConfirmedUntil: "Payment confirmed. Liquidity pools premium active until {date}.",
+      poolPaymentConfirmed: "Payment confirmed. Liquidity pools premium activated.",
+      poolConfirmationSlow:
+        "Confirmation is taking a while. Liquidity pools premium will be activated soon.",
+      poolHeroBadge: "Liquidity pools · US$ 2/month or US$ 18/year",
+      poolHeroTitle: "Alerts for your liquidity pool positions.",
+      poolHeroDescription:
+        "For US$ 2/month you receive daily Telegram alerts about your pool and when your Uniswap V3 position goes out of range (range min, range max and current price). Or pay US$ 18/year (US$ 1.50 per month).",
+      poolFreePlanTitle: "Free plan",
+      poolFreePlanItem1: "- Access to the basic dashboard",
+      poolFreePlanItem2: "- Manual check of liquidity pools and positions",
+      poolFreePlanItem3: "- No range alerts",
+      poolPaidPlanTitle: "Liquidity pools premium · US$ 2/month or US$ 18/year",
+      poolPaidPlanItem1: "✓ Range alerts on Telegram when position goes out of range",
+      poolPaidPlanItem2: "✓ Uniswap V3: range min, range max and current price",
+      poolPaidPlanItem3: "✓ Alerts for all your LP positions on supported networks",
+      poolPaidPlanItem4: "✓ Priority support for new features",
+      poolPaidPlanItem5: "✓ Cancel anytime",
+      poolHeroFooter:
+        "You can cancel at any time. The amount is charged in stablecoin (USDT) on low-cost networks.",
       heroFooter:
         "You can cancel at any time. The amount is charged in stablecoin (USDT) on low-cost networks.",
     },
@@ -523,6 +549,7 @@ export const translations: Record<Locale, TranslationTree> = {
         "A carteira será aberta na rede {network} com {amount} preenchidos.",
       openWalletAndPay:
         "Abrir carteira e pagar {amount} ({network})",
+      waitingConfirmation: "Aguardando confirmação…",
       infoLoggedAndConnected:
         "É necessário estar logado e conectar a carteira. Ao confirmar o pagamento na carteira, o premium é ativado automaticamente.",
       loadingPaymentOptions: "Carregando opções de pagamento…",
@@ -547,10 +574,33 @@ export const translations: Record<Locale, TranslationTree> = {
       paidPlanItem4: "✓ Suporte prioritário para novidades",
       paidPlanItem5: "✓ Preço do Bitcoin",
       paidPlanItem6: "✓ Premium Pools (alertas de range) — US$ 2/mês",
-      poolPremiumHeading: "Premium Pools · US$ 2/mês",
+      poolPremiumHeading: "Premium de pools de liquidez · US$ 2/mês",
       poolPremiumDescription:
-        "Receba alertas no Telegram quando uma posição de liquidez Uniswap V3 sair do range (range min, range max e posição atual).",
-      poolPremiumActiveBadge: "Premium Pools ativo",
+        "Receba alertas diários no Telegram sobre sua pool e quando uma posição em pool de liquidez Uniswap V3 sair do range (range min, range max e preço atual).",
+      poolPremiumActiveBadge: "Premium de pools de liquidez ativo",
+      poolLoginAndConnectWallet:
+        "Para ativar o premium de pools de liquidez, faça login e conecte a carteira que usará para pagar.",
+      poolConnectWalletToPay:
+        "Conecte sua carteira para pagar e ativar o premium de pools de liquidez.",
+      poolPremiumValidUntil: "Seu plano de pools de liquidez está válido até ",
+      poolPaymentConfirmedUntil: "Pagamento confirmado. Premium de pools de liquidez ativo até {date}.",
+      poolPaymentConfirmed: "Pagamento confirmado. Premium de pools de liquidez ativado.",
+      poolHeroBadge: "Pools de liquidez · US$ 2/mês ou US$ 18/ano",
+      poolHeroTitle: "Alertas para suas posições em pools de liquidez.",
+      poolHeroDescription:
+        "Por US$ 2/mês você recebe alertas diários no Telegram sobre sua pool e quando sua posição Uniswap V3 sair do range (range min, range max e preço atual). Ou pague US$ 18/ano (US$ 1,50 por mês).",
+      poolFreePlanTitle: "Plano gratuito",
+      poolFreePlanItem1: "- Acesso ao painel básico",
+      poolFreePlanItem2: "- Consulta manual de pools de liquidez e posições",
+      poolFreePlanItem3: "- Sem alertas de range",
+      poolPaidPlanTitle: "Premium de pools de liquidez · US$ 2/mês ou US$ 18/ano",
+      poolPaidPlanItem1: "✓ Alertas de range no Telegram quando a posição sair do range",
+      poolPaidPlanItem2: "✓ Uniswap V3: range min, range max e preço atual",
+      poolPaidPlanItem3: "✓ Alertas para todas as suas posições LP nas redes suportadas",
+      poolPaidPlanItem4: "✓ Suporte prioritário para novidades",
+      poolPaidPlanItem5: "✓ Cancele quando quiser",
+      poolHeroFooter:
+        "Você pode cancelar a qualquer momento. O valor é cobrado em stablecoin (USDT) em redes de baixo custo.",
       heroFooter:
         "Você pode cancelar a qualquer momento. O valor é cobrado em stablecoin (USDT) em redes de baixo custo.",
     },

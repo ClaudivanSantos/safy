@@ -100,26 +100,21 @@ export async function GET(request: Request) {
 
         if (paidAmount && paidAmount >= monthlyMinWei) {
           const isPool = product === "pool";
-          const isAnnual = !isPool && paidAmount >= annualMinWei;
-          const expiresAt = new Date(
-            now + (isAnnual ? ONE_YEAR_MS : THIRTY_DAYS_MS)
-          );
-
-          await prisma.user.update({
-            where: { id: session.sub },
-            data: {
-              wallet_address: getAddress(walletParam),
-              ...(isPool
-                ? { pool_premium_expires_at: expiresAt }
-                : { premium_expires_at: expiresAt }),
-            },
-          });
-
-          if (isPool) {
-            out.poolPremiumExpiresAt = expiresAt.toISOString();
-          } else {
+          if (!isPool) {
+            const isAnnual = paidAmount >= annualMinWei;
+            const expiresAt = new Date(
+              now + (isAnnual ? ONE_YEAR_MS : THIRTY_DAYS_MS)
+            );
+            await prisma.user.update({
+              where: { id: session.sub },
+              data: {
+                wallet_address: getAddress(walletParam),
+                premium_expires_at: expiresAt,
+              },
+            });
             out.premiumExpiresAt = expiresAt.toISOString();
           }
+          // Para product=pool, o campo pool_premium_expires_at é atualizado pela API POST /api/pool-premium-activate
         }
       }
     }

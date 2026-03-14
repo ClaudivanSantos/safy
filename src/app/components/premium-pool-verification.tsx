@@ -181,7 +181,7 @@ export function PremiumPoolVerification() {
         setPayingLoading(false);
         return;
       }
-      setMessage(`Transação enviada. Aguardando confirmação na ${net.name}…`);
+      setMessage(t("txSentWaiting").replace("{network}", net.name));
       const maxAttempts = 40;
       for (let i = 0; i < maxAttempts; i++) {
         await new Promise((r) => setTimeout(r, 3000));
@@ -191,33 +191,50 @@ export function PremiumPoolVerification() {
         ).then((r) => r.json());
         const payload = rres as {
           receipt?: { blockNumber?: string; status?: string };
-          poolPremiumExpiresAt?: string;
         };
         const res = payload?.receipt;
         if (res?.blockNumber && res?.status === "0x1") {
-          if (payload.poolPremiumExpiresAt) {
-            const date = new Date(payload.poolPremiumExpiresAt);
+          const activateRes = await fetch("/api/pool-premium-activate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              txHash,
+              chain: net.id,
+              wallet: address,
+              paymentAddress: paymentInfo.paymentAddress,
+            }),
+          });
+          const activateData = (await activateRes.json().catch(() => null)) as {
+            poolPremiumExpiresAt?: string;
+            error?: string;
+          } | null;
+          if (!activateRes.ok) {
+            setError(activateData?.error ?? t("txSendError"));
+            setPayingLoading(false);
+            return;
+          }
+          if (activateData?.poolPremiumExpiresAt) {
+            const date = new Date(activateData.poolPremiumExpiresAt);
             const formatted = new Intl.DateTimeFormat("pt-BR", {
               dateStyle: "medium",
               timeStyle: "short",
             }).format(date);
-            setMessage(t("paymentConfirmedUntil").replace("{date}", formatted));
+            setMessage(t("poolPaymentConfirmedUntil").replace("{date}", formatted));
           } else {
-            setMessage(t("paymentConfirmed"));
+            setMessage(t("poolPaymentConfirmed"));
           }
           setPayingLoading(false);
-          if (paymentInfo) {
-            fetch("/api/premium-payment-info", { credentials: "include" })
-              .then((r) => (r.ok ? r.json() : null))
-              .then((data: PaymentInfo | null) => {
-                if (data?.paymentAddress && data?.networks?.length) setPaymentInfo(data);
-              })
-              .catch(() => {});
-          }
+          fetch("/api/premium-payment-info", { credentials: "include" })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data: PaymentInfo | null) => {
+              if (data?.paymentAddress && data?.networks?.length) setPaymentInfo(data);
+            })
+            .catch(() => {});
           return;
         }
       }
-      setMessage(t("confirmationSlow"));
+      setMessage(t("poolConfirmationSlow"));
     } catch (err) {
       const msg = err instanceof Error ? err.message : t("txSendError");
       const lower = msg.toLowerCase();
@@ -246,7 +263,7 @@ export function PremiumPoolVerification() {
             {t("poolPremiumActiveBadge")}
           </p>
           <p className="mt-2 text-sm text-foreground/90">
-            {t("premiumValidUntil")}
+            {t("poolPremiumValidUntil")}
             <strong>
               {new Intl.DateTimeFormat("pt-BR", {
                 dateStyle: "long",
@@ -260,7 +277,7 @@ export function PremiumPoolVerification() {
 
       {!isPoolPremiumActive && !loggedIn && (
         <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-          <p className="mb-3 text-sm text-amber-100">{t("loginAndConnectWallet")}</p>
+          <p className="mb-3 text-sm text-amber-100">{t("poolLoginAndConnectWallet")}</p>
           <Link
             href="/login"
             className="inline-flex rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover"
@@ -272,7 +289,7 @@ export function PremiumPoolVerification() {
 
       {!isPoolPremiumActive && canSeePremium && !address && (
         <div className="mb-4">
-          <p className="mb-2 text-sm text-foreground/70">{t("connectWalletToPay")}</p>
+          <p className="mb-2 text-sm text-foreground/70">{t("poolConnectWalletToPay")}</p>
           <button
             type="button"
             onClick={connectWallet}
@@ -322,7 +339,7 @@ export function PremiumPoolVerification() {
               className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover disabled:opacity-60"
             >
               {payingLoading
-                ? "Aguardando confirmação…"
+                ? t("waitingConfirmation")
                 : t("openWalletAndPay")
                     .replace("{amount}", "2 USDT (mensal)")
                     .replace("{network}", selectedNetworkId.toUpperCase())}
