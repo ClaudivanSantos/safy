@@ -3,10 +3,24 @@ import { verifySessionCookie, COOKIE_NAME } from "@/lib/auth-middleware";
 
 const PUBLIC_PATHS = ["/login", "/signup", "/api/auth", "/auth", "/aguarde-validacao", "/~offline"];
 
+/** Rotas ocultas: redirecionar para home para impedir acesso direto. */
+const HIDDEN_ROUTES = ["/dashboard", "/preco-medio", "/carteira"];
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const res = NextResponse.next();
   res.headers.set("x-pathname", pathname);
+
+  const isHiddenRoute = HIDDEN_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
+  if (isHiddenRoute) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  /** Redirecionar URL antiga /saude-defi para /aave */
+  if (pathname === "/saude-defi" || pathname.startsWith("/saude-defi/")) {
+    const newPath = pathname === "/saude-defi" ? "/aave" : `/aave${pathname.slice("/saude-defi".length)}`;
+    return NextResponse.redirect(new URL(newPath, request.url));
+  }
 
   const token = request.cookies.get(COOKIE_NAME)?.value;
   const session = await verifySessionCookie(token);

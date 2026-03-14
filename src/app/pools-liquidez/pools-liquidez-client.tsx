@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useCallback, useEffect } from "react";
 import { isAddress } from "viem";
 import { SiEthereum, SiBinance, SiPolygon } from "react-icons/si";
@@ -58,6 +59,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
     bsc: null,
     polygon: null,
     arbitrum: null,
+    base: null,
   });
 
   const { t } = useTranslation("pools");
@@ -75,6 +77,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
       bsc: null,
       polygon: null,
       arbitrum: null,
+      base: null,
     };
     await Promise.all(
       POOL_NETWORK_IDS.map(async (chainId) => {
@@ -129,6 +132,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
       bsc: null,
       polygon: null,
       arbitrum: null,
+      base: null,
     };
     Promise.all(
       POOL_NETWORK_IDS.map(async (chainId) => {
@@ -175,6 +179,22 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="mx-auto max-w-5xl space-y-10">
+        {/* Premium em destaque no topo (igual à tela Aave) */}
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
+          <span className="text-base font-semibold text-primary">
+            ★ {t("subscribePremium")} ★
+          </span>
+          <p className="text-sm text-foreground/80">
+            {t("subscribePremiumTeaser")}
+          </p>
+          <Link
+            href="/premium-pools"
+            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+          >
+            {t("premiumLearnMore")}
+          </Link>
+        </div>
+
         {/* Hero */}
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
@@ -234,6 +254,7 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
                   {chainId === "bsc" && <SiBinance className="h-4 w-4" />}
                   {chainId === "polygon" && <SiPolygon className="h-4 w-4" />}
                   {chainId === "arbitrum" && <SiEthereum className="h-4 w-4" />}
+                  {chainId === "base" && <span className="text-xs font-bold">B</span>}
                 </span>
                 <span>
                   {network.name}

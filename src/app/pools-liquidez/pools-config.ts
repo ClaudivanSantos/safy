@@ -4,7 +4,7 @@
  * Multi-chain (Ethereum, BNB, Polygon, Arbitrum) usa /api/pools com RPC + Dexscreener + DefiLlama.
  */
 
-export type PoolNetworkId = "ethereum" | "bsc" | "polygon" | "arbitrum";
+export type PoolNetworkId = "ethereum" | "bsc" | "polygon" | "arbitrum" | "base";
 export type PoolProtocolVersion = "v2" | "v3" | "v4";
 
 export type PoolNetworkConfig = {
@@ -50,6 +50,14 @@ export const POOL_NETWORKS: Record<PoolNetworkId, PoolNetworkConfig> = {
     dexAppUrl: "https://app.uniswap.org/liquidity",
     subgraphEnabled: false,
   },
+  base: {
+    id: "base",
+    name: "Base",
+    chainId: 8453,
+    dexName: "Uniswap V2",
+    dexAppUrl: "https://app.uniswap.org/liquidity",
+    subgraphEnabled: false,
+  },
 };
 
 export const POOL_NETWORK_IDS = Object.keys(POOL_NETWORKS) as PoolNetworkId[];
@@ -78,7 +86,9 @@ export function getKrystalLiquidityUrl(networkId: PoolNetworkId): string {
         ? "bsc"
         : networkId === "polygon"
           ? "polygon"
-          : "arbitrum";
+          : networkId === "arbitrum"
+            ? "arbitrum"
+            : "base";
   return `https://defi.krystal.app/liquidity?network=${networkParam}`;
 }
 

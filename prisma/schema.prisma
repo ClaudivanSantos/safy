@@ -27,9 +27,10 @@ model User {
   created_at    DateTime       @default(now()) @db.Timestamptz(6)
 
   // Integrações e premium
-  wallet_address     String?
-  telegram_chat_id   String?        
-  premium_expires_at DateTime?      @db.Timestamptz(6)
+  wallet_address        String?
+  telegram_chat_id      String?
+  premium_expires_at    DateTime?   @db.Timestamptz(6)  // Premium Aave (alertas HF)
+  pool_premium_expires_at DateTime? @db.Timestamptz(6)  // Premium Pools (alertas range)
 
   wallets   Wallet[]
   settings  UserSettings?

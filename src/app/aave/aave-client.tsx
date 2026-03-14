@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useCallback, useEffect } from "react";
 import { createPublicClient, http, fallback, formatUnits, isAddress, encodeFunctionData, decodeAbiParameters, type Chain } from "viem";
-import { mainnet, polygon, arbitrum } from "viem/chains";
+import { mainnet, polygon, arbitrum, base } from "viem/chains";
 import { SiEthereum, SiPolygon } from "react-icons/si";
 import { useWallet, shortAddress } from "@/app/contexts/wallet-context";
 import { useTranslation } from "@/app/hooks/use-translation";
@@ -24,6 +25,7 @@ const CHAINS_BY_NETWORK: Record<AaveNetworkId, Chain> = {
   ethereum: mainnet,
   polygon,
   arbitrum,
+  base,
 };
 
 type UserAccountData = {
@@ -151,7 +153,7 @@ function getLiquidationData(account: UserAccountData) {
   return { liquidationCollateralBase, dropPercent };
 }
 
-export default function SaudeDefiClient({ initialAddress }: { initialAddress?: string } = {}) {
+export default function AaveClient({ initialAddress }: { initialAddress?: string } = {}) {
   const { address: contextAddress } = useWallet();
   const connectedAddress = contextAddress ?? (initialAddress && isAddress(initialAddress) ? initialAddress : null);
 
@@ -163,7 +165,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
   /** Por rede: dados da Aave ou erro. null = ainda não consultado. */
   const [resultsByNetwork, setResultsByNetwork] = useState<
     Record<AaveNetworkId, { accountData: UserAccountData; collaterals: CollateralRow[]; debts: DebtRow[] } | { error: string } | null>
-  >({ ethereum: null, polygon: null, arbitrum: null });
+  >({ ethereum: null, polygon: null, arbitrum: null, base: null });
 
   const { t } = useTranslation("defiHealthPage");
 
@@ -328,7 +330,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
     }
 
     setLoading(true);
-    const next: typeof resultsByNetwork = { ethereum: null, polygon: null, arbitrum: null };
+    const next: typeof resultsByNetwork = { ethereum: null, polygon: null, arbitrum: null, base: null };
     const addr = connectedAddress as `0x${string}`;
 
     await Promise.all(
@@ -353,7 +355,7 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
     if (!addr || !isAddress(addr)) return;
     setLoading(true);
     setError(null);
-    const next: typeof resultsByNetwork = { ethereum: null, polygon: null, arbitrum: null };
+    const next: typeof resultsByNetwork = { ethereum: null, polygon: null, arbitrum: null, base: null };
     (async () => {
       await Promise.all(
         AAVE_NETWORK_IDS.map(async (networkId) => {
@@ -380,6 +382,22 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="mx-auto max-w-5xl space-y-10">
+        {/* Premium em destaque no topo */}
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
+          <span className="text-base font-semibold text-primary">
+            ★ {t("premiumLink")} ★
+          </span>
+          <p className="text-sm text-foreground/80">
+            {t("premiumTeaser")}
+          </p>
+          <Link
+            href="/premium"
+            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+          >
+            {t("premiumLearnMore")}
+          </Link>
+        </div>
+
         {/* Hero */}
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
@@ -458,6 +476,9 @@ export default function SaudeDefiClient({ initialAddress }: { initialAddress?: s
                       )}
                       {networkId === "arbitrum" && (
                         <SiEthereum className="h-4 w-4" />
+                      )}
+                      {networkId === "base" && (
+                        <span className="text-xs font-bold">B</span>
                       )}
                     </span>
                     <span>{network.name}</span>

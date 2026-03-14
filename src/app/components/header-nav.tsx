@@ -5,37 +5,14 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "@/app/hooks/use-translation";
 
 const LINKS = [
-  { href: "/dashboard", key: "dashboard" as const },
-  { href: "/carteira", key: "wallet" as const },
-  { href: "/preco-medio", key: "averagePrice" as const },
   { href: "/pools-liquidez", key: "pools" as const },
-  { href: "/saude-defi", key: "defiHealth" as const },
-  { href: "/premium", label: "Premium" },
+  { href: "/aave", key: "defiHealth" as const },
+  // Premium acessível dentro da página Aave (link na seção Links)
 ];
 
 export function HeaderNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isPremiumActive, setIsPremiumActive] = useState(false);
   const { t } = useTranslation("nav");
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/premium-payment-info", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { premiumExpiresAt?: string | null } | null) => {
-        if (cancelled || !data?.premiumExpiresAt) return;
-        const date = new Date(data.premiumExpiresAt);
-        if (date.getTime() > Date.now()) {
-          setIsPremiumActive(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setIsPremiumActive(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     const g = typeof globalThis !== "undefined" ? globalThis : null;
@@ -59,21 +36,15 @@ export function HeaderNav() {
     <>
       {/* Desktop nav */}
       <nav className="order-2 hidden items-center gap-0.5 md:flex md:gap-1">
-        {LINKS.map(({ href, key, label }) => {
-          const isPremiumLink = href === "/premium";
-          const baseLabel = (key != null ? t(key) : label) ?? "";
-          const finalLabel = (isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel) ?? "";
-          const premiumClasses = isPremiumLink && isPremiumActive ? "text-emerald-400 border border-emerald-500/40 bg-emerald-500/10" : "";
-          return (
+        {LINKS.map(({ href, key }) => (
           <Link
             key={href}
             href={href}
-            className={`rounded-md px-2 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary md:px-2.5 md:py-2 md:text-sm ${premiumClasses}`}
+            className="rounded-md px-2 py-1.5 text-xs font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary md:px-2.5 md:py-2 md:text-sm"
           >
-            {finalLabel}
+            {t(key)}
           </Link>
-        );
-        })}
+        ))}
       </nav>
 
       {/* Mobile hamburger */}
@@ -110,22 +81,16 @@ export function HeaderNav() {
             role="dialog"
             aria-label={t("navLabel")}
           >
-            {LINKS.map(({ href, key, label }) => {
-              const isPremiumLink = href === "/premium";
-              const baseLabel = (key != null ? t(key) : label) ?? "";
-              const finalLabel = (isPremiumLink && isPremiumActive ? t("premiumActive") : baseLabel) ?? "";
-              const premiumClasses = isPremiumLink && isPremiumActive ? "text-emerald-400 border border-emerald-500/40 bg-emerald-500/10" : "";
-              return (
+            {LINKS.map(({ href, key }) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setMobileOpen(false)}
-                className={`rounded-md px-3 py-2.5 text-sm font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary ${premiumClasses}`}
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-foreground/90 transition-colors hover:bg-muted hover:text-primary"
               >
-                {finalLabel}
+                {t(key)}
               </Link>
-            );
-            })}
+            ))}
           </nav>
         </>
       )}

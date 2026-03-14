@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     if (!chainParam || !CHAIN_IDS.includes(chainParam as ChainId)) {
       return NextResponse.json(
-        { error: "Invalid or missing chain. Use: ethereum, bsc, polygon, arbitrum." },
+        { error: "Invalid or missing chain. Use: ethereum, bsc, polygon, arbitrum, base." },
         { status: 400 }
       );
     }

@@ -25,9 +25,9 @@ export const translations: Record<Locale, TranslationTree> = {
     nav: {
       dashboard: "DeFi",
       wallet: "Wallet",
-      averagePrice: "Average price",
+      //averagePrice: "Average price",
       pools: "Pools",
-      defiHealth: "DeFi Health",
+      defiHealth: "Aave",
       premium: "Premium",
       premiumActive: "Premium active",
       openMenu: "Open menu",
@@ -37,7 +37,7 @@ export const translations: Record<Locale, TranslationTree> = {
     home: {
       subtitle: "Free tool for safer decisions in DeFi.",
       description:
-        "Average price calculator, liquidity pool analysis and health monitoring for Aave protocols — all in one place so you can make informed decisions.",
+        "Liquidity pool analysis and health monitoring for Aave protocols — all in one place so you can make informed decisions.",
       featuresTitle: "Features",
       access: "Access",
       featureDashboardTitle: "Dashboard",
@@ -49,7 +49,7 @@ export const translations: Record<Locale, TranslationTree> = {
       featurePoolsTitle: "Liquidity Pools",
       featurePoolsDescription:
         "Your LP positions and pool list by network (Ethereum, BNB, Polygon, Arbitrum).",
-      featureDefiHealthTitle: "DeFi Health (Aave)",
+      featureDefiHealthTitle: "Aave",
       featureDefiHealthDescription:
         "Health factor, collateral, debt and liquidation price on Aave V3.",
       cta: "Connect your wallet in the header and explore the dashboard, pools and Aave health.",
@@ -170,6 +170,10 @@ export const translations: Record<Locale, TranslationTree> = {
         "Open wallet and pay {amount} ({network})",
       infoLoggedAndConnected:
         "You need to be logged in and connect your wallet. After confirming the payment in the wallet, premium is activated automatically.",
+      loadingPaymentOptions: "Loading payment options…",
+      paymentConfigUnavailable:
+        "Payment options could not be loaded. Check that PAYMENT_ADDRESS is set on the server or try again later.",
+      retry: "Try again",
       connectWalletButton: "Connect wallet",
       connecting: "Connecting…",
       login: "Sign in",
@@ -187,6 +191,11 @@ export const translations: Record<Locale, TranslationTree> = {
       paidPlanItem3: "✓ Automatic daily report with total wallet balance and Fear & Greed Index",
       paidPlanItem4: "✓ Priority support for new features",
       paidPlanItem5: "✓ Bitcoin price",
+      paidPlanItem6: "✓ Premium Pools (range alerts) — US$ 2/month",
+      poolPremiumHeading: "Premium Pools · US$ 2/month",
+      poolPremiumDescription:
+        "Receive Telegram alerts when a Uniswap V3 liquidity position goes out of range (range min, range max and current price).",
+      poolPremiumActiveBadge: "Premium Pools active",
       heroFooter:
         "You can cancel at any time. The amount is charged in stablecoin (USDT) on low-cost networks.",
     },
@@ -245,6 +254,9 @@ export const translations: Record<Locale, TranslationTree> = {
       headerTitle: "Liquidity Pools",
       headerDescription:
         "Connect your wallet in the header and click See my positions. We query Ethereum, BNB Chain, Polygon and Arbitrum via RPC; networks without positions show \"No position on this network\".",
+      subscribePremium: "Premium",
+      subscribePremiumTeaser: "Alerts when your position goes out of range (Uniswap V3).",
+      premiumLearnMore: "Learn more",
       myPositions: "My positions",
       errorLoading: "Error loading pools.",
       viewAllNetworks: "See my positions on all networks",
@@ -263,19 +275,22 @@ export const translations: Record<Locale, TranslationTree> = {
         'Positions are automatically queried on Ethereum, BNB Chain, Polygon and Arbitrum. Networks without positions show "No position on this network".',
     },
     defiHealthPage: {
-      headerTitle: "DeFi Health — Aave",
+      headerTitle: "Aave",
       headerDescription:
         "Check your position on Aave V3 across all networks: health factor, collateral, debt and liquidation price. Connect your wallet in the header and click Check.",
       checkSectionTitle: "Check position",
       connectHeader:
         "Connect your wallet in the header to check your position on Aave.",
       rpcInfo:
-        'Data is fetched via RPC on Ethereum, Polygon and Arbitrum. Networks without positions show "No position on this network".',
+        'Data is fetched via RPC on Ethereum, Polygon, Arbitrum and Base. Networks without positions show "No position on this network".',
       errorDefault: "Error fetching data from Aave.",
       checkAllNetworks: "Check position on all networks",
       loadingAllNetworks: "Fetching on all networks…",
       noPositionThisNetwork: "No Aave position on this network.",
       linksTitle: "Links",
+      premiumLink: "Premium",
+      premiumTeaser: "Exclusive benefits and alerts.",
+      premiumLearnMore: "Learn more",
       openOnAave: "Open position on Aave",
       hfLabel: "Health Factor",
       totalCollateralLabel: "Total collateral",
@@ -364,9 +379,9 @@ export const translations: Record<Locale, TranslationTree> = {
     nav: {
       dashboard: "DeFi",
       wallet: "Carteira",
-      averagePrice: "Preço médio",
+      //averagePrice: "Preço médio",
       pools: "Pools",
-      defiHealth: "Saúde DeFi",
+      defiHealth: "Aave",
       premium: "Premium",
       premiumActive: "Premium ativo",
       openMenu: "Abrir menu",
@@ -376,7 +391,7 @@ export const translations: Record<Locale, TranslationTree> = {
     home: {
       subtitle: "Ferramenta gratuita para decisões mais seguras em DeFi.",
       description:
-        "Calculadora de preço médio, análise de pools de liquidez e monitoramento de saúde em protocolos Aave — tudo em um só lugar para você tomar decisões informadas.",
+        "Análise de pools de liquidez e monitoramento de saúde em protocolos Aave — tudo em um só lugar para você tomar decisões informadas.",
       featuresTitle: "Funcionalidades",
       access: "Acessar",
       featureDashboardTitle: "Dashboard",
@@ -388,7 +403,7 @@ export const translations: Record<Locale, TranslationTree> = {
       featurePoolsTitle: "Pools de Liquidez",
       featurePoolsDescription:
         "Suas posições LP e lista de pools por rede (Ethereum, BNB, Polygon, Arbitrum).",
-      featureDefiHealthTitle: "Saúde DeFi (Aave)",
+      featureDefiHealthTitle: "Aave",
       featureDefiHealthDescription:
         "Health factor, colateral, dívida e preço de liquidação na Aave V3.",
       cta: "Conecte sua carteira no header e explore o dashboard, pools e saúde Aave.",
@@ -510,6 +525,10 @@ export const translations: Record<Locale, TranslationTree> = {
         "Abrir carteira e pagar {amount} ({network})",
       infoLoggedAndConnected:
         "É necessário estar logado e conectar a carteira. Ao confirmar o pagamento na carteira, o premium é ativado automaticamente.",
+      loadingPaymentOptions: "Carregando opções de pagamento…",
+      paymentConfigUnavailable:
+        "Não foi possível carregar as opções de pagamento. Verifique se PAYMENT_ADDRESS está configurado no servidor ou tente novamente.",
+      retry: "Tentar novamente",
       connectWalletButton: "Conectar carteira",
       connecting: "Conectando…",
       login: "Entrar",
@@ -527,6 +546,11 @@ export const translations: Record<Locale, TranslationTree> = {
       paidPlanItem3: "✓ Relatório diário automático com saldo total da carteira e Fear & Greed Index",
       paidPlanItem4: "✓ Suporte prioritário para novidades",
       paidPlanItem5: "✓ Preço do Bitcoin",
+      paidPlanItem6: "✓ Premium Pools (alertas de range) — US$ 2/mês",
+      poolPremiumHeading: "Premium Pools · US$ 2/mês",
+      poolPremiumDescription:
+        "Receba alertas no Telegram quando uma posição de liquidez Uniswap V3 sair do range (range min, range max e posição atual).",
+      poolPremiumActiveBadge: "Premium Pools ativo",
       heroFooter:
         "Você pode cancelar a qualquer momento. O valor é cobrado em stablecoin (USDT) em redes de baixo custo.",
     },
@@ -585,6 +609,9 @@ export const translations: Record<Locale, TranslationTree> = {
       headerTitle: "Pools de Liquidez",
       headerDescription:
         "Conecte a carteira no header e clique em Ver minhas posições. Consultamos Ethereum, BNB Chain, Polygon e Arbitrum via RPC; redes sem posição exibem \"Nenhuma posição nesta rede\".",
+      subscribePremium: "Premium",
+      subscribePremiumTeaser: "Alertas quando sua posição sair do range (Uniswap V3).",
+      premiumLearnMore: "Saber mais",
       myPositions: "Minhas posições",
       errorLoading: "Erro ao carregar pools.",
       viewAllNetworks: "Ver minhas posições em todas as redes",
@@ -603,19 +630,22 @@ export const translations: Record<Locale, TranslationTree> = {
         'As posições são consultadas automaticamente em Ethereum, BNB Chain, Polygon e Arbitrum. Redes sem posição mostram "Nenhuma posição nesta rede".',
     },
     defiHealthPage: {
-      headerTitle: "Saúde DeFi — Aave",
+      headerTitle: "Aave",
       headerDescription:
         "Verifique sua posição na Aave V3 em todas as redes: health factor, colateral, dívida e preço de liquidação. Conecte a carteira no header e clique em Verificar.",
       checkSectionTitle: "Verificar posição",
       connectHeader:
         "Conecte a carteira no header para verificar sua posição na Aave.",
       rpcInfo:
-        'Os dados são buscados via RPC em Ethereum, Polygon e Arbitrum. Redes sem posição exibem "Nenhuma posição nesta rede".',
+        'Os dados são buscados via RPC em Ethereum, Polygon, Arbitrum e Base. Redes sem posição exibem "Nenhuma posição nesta rede".',
       errorDefault: "Erro ao buscar dados na Aave.",
       checkAllNetworks: "Verificar posição em todas as redes",
       loadingAllNetworks: "Buscando em todas as redes…",
       noPositionThisNetwork: "Nenhuma posição na Aave nesta rede.",
       linksTitle: "Links",
+      premiumLink: "Premium",
+      premiumTeaser: "Benefícios e alertas exclusivos.",
+      premiumLearnMore: "Saber mais",
       openOnAave: "Abrir posição na Aave",
       hfLabel: "Health Factor",
       totalCollateralLabel: "Total colateral",

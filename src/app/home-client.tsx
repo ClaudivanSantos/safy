@@ -11,26 +11,22 @@ const STORAGE_KEY = "safy-donation-modal-seen";
 
 const FEATURES = [
   {
-    key: "dashboard" as const,
-    href: "/dashboard",
-    icon: "📊",
-  },
-  {
-    key: "averagePrice" as const,
-    href: "/preco-medio",
-    icon: "🧮",
-  },
-  {
     key: "pools" as const,
     href: "/pools-liquidez",
     icon: "💧",
   },
   {
     key: "defiHealth" as const,
-    href: "/saude-defi",
+    href: "/aave",
     icon: "❤️",
   },
+  // Ocultos: dashboard, averagePrice, wallet (rotas inacessíveis)
 ];
+
+const FEATURE_I18N: Record<(typeof FEATURES)[number]["key"], { title: string; description: string }> = {
+  pools: { title: "featurePoolsTitle", description: "featurePoolsDescription" },
+  defiHealth: { title: "featureDefiHealthTitle", description: "featureDefiHealthDescription" },
+};
 
 function ProtocolLogo({ name, color }: { name: string; color: string }) {
   const initial = name.slice(0, 1);
@@ -125,22 +121,7 @@ export function HomeClient() {
               </h2>
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {FEATURES.map((f) => {
-                  const titleKey =
-                    f.key === "dashboard"
-                      ? "featureDashboardTitle"
-                      : f.key === "averagePrice"
-                      ? "featureAveragePriceTitle"
-                      : f.key === "pools"
-                      ? "featurePoolsTitle"
-                      : "featureDefiHealthTitle";
-                  const descriptionKey =
-                    f.key === "dashboard"
-                      ? "featureDashboardDescription"
-                      : f.key === "averagePrice"
-                      ? "featureAveragePriceDescription"
-                      : f.key === "pools"
-                      ? "featurePoolsDescription"
-                      : "featureDefiHealthDescription";
+                  const { title: titleKey, description: descriptionKey } = FEATURE_I18N[f.key];
                   return (
                     <Link
                       key={f.href}

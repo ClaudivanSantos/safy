@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendTelegramMessage } from "@/services/telegram";
-import { AAVE_NETWORKS, AAVE_NETWORK_IDS, POOL_ABI } from "@/app/saude-defi/aave-config";
+import { AAVE_NETWORKS, AAVE_NETWORK_IDS, POOL_ABI } from "@/app/aave/aave-config";
 import {
   createPublicClient,
   http,

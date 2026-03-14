@@ -5,7 +5,7 @@
 
 import { CHAINS } from "@/lib/chains";
 
-export type AaveNetworkId = "ethereum" | "polygon" | "arbitrum";
+export type AaveNetworkId = "ethereum" | "polygon" | "arbitrum" | "base";
 
 export type AaveNetworkConfig = {
   id: AaveNetworkId;
@@ -60,6 +60,19 @@ export const AAVE_NETWORKS: Record<AaveNetworkId, AaveNetworkConfig> = {
     poolAddress: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
     poolAddressesProvider: "0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb",
     uiPoolDataProvider: "0x145dE30c929a065582da84Cf96F88460dB9745A7",
+  },
+  base: {
+    id: "base",
+    name: "Base",
+    chainId: 8453,
+    rpcUrls: [
+      CHAINS.base.rpc,
+      "https://base.llamarpc.com",
+      "https://rpc.ankr.com/base",
+    ],
+    poolAddress: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+    poolAddressesProvider: "0xe20fCBdBfFC4Dd138cE8b2E6FBb6CB49777ad64D",
+    uiPoolDataProvider: "0xb84A20e848baE3e13897934bB4e74E2225f4546B",
   },
 };
 

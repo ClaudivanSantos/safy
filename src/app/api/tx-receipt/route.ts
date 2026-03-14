@@ -8,7 +8,8 @@ import {
 } from "@/lib/premium-networks";
 import { isAddress, getAddress } from "viem";
 
-const PAYMENT_ADDRESS_ENV = process.env.PAYMENT_ADDRESS;
+const PAYMENT_ADDRESS_ENV =
+  process.env.PAYMENT_ADDRESS || process.env.NEXT_PUBLIC_PAYMENT_ADDRESS;
 
 /** Transfer(address,address,uint256) */
 const TRANSFER_TOPIC =
@@ -40,6 +41,9 @@ export async function GET(request: Request) {
   const hash = searchParams.get("hash");
   const chain = (searchParams.get("chain") ?? "bsc") as PremiumNetworkId;
   const walletParam = searchParams.get("wallet");
+  const product = searchParams.get("product") === "pool" ? "pool" : "aave";
+  const paymentAddressParam = searchParams.get("paymentAddress");
+  const paymentAddress = PAYMENT_ADDRESS_ENV || paymentAddressParam;
   if (!hash || !/^0x[a-fA-F0-9]{64}$/.test(hash)) {
     return NextResponse.json({ error: "Hash inválido." }, { status: 400 });
   }
@@ -67,43 +71,55 @@ export async function GET(request: Request) {
       logs?: Array<{ address?: string; topics?: string[]; data?: string }>;
     } | null;
 
-    const out: { receipt: typeof result; premiumExpiresAt?: string } = {
+    const out: { receipt: typeof result; premiumExpiresAt?: string; poolPremiumExpiresAt?: string } = {
       receipt: result,
     };
 
     if (
       receipt?.blockNumber &&
       receipt?.status === "0x1" &&
-      PAYMENT_ADDRESS_ENV &&
-      isAddress(PAYMENT_ADDRESS_ENV) &&
+      paymentAddress &&
+      isAddress(paymentAddress) &&
       walletParam &&
       isAddress(walletParam)
     ) {
       const session = await getSession();
       if (session?.sub) {
-        const paymentAddress = getAddress(PAYMENT_ADDRESS_ENV);
         const monthlyMinWei = BigInt(2) * BigInt(10) ** BigInt(net.decimals);
-        const paidAmountWei = parseReceiptLogsForTransfer(
+        const annualMinWei = BigInt(18) * BigInt(10) ** BigInt(net.decimals);
+        const now = Date.now();
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+        const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+        const paidAmount = parseReceiptLogsForTransfer(
           receipt,
           net.usdtContract,
-          paymentAddress,
+          getAddress(paymentAddress),
           monthlyMinWei
         );
-        if (paidAmountWei && paidAmountWei >= monthlyMinWei) {
-          const now = Date.now();
-          const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-          const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-          const annualMinWei = BigInt(18) * BigInt(10) ** BigInt(net.decimals);
-          const isAnnual = paidAmountWei >= annualMinWei;
-          const expiresAt = new Date(now + (isAnnual ? ONE_YEAR_MS : THIRTY_DAYS_MS));
+
+        if (paidAmount && paidAmount >= monthlyMinWei) {
+          const isPool = product === "pool";
+          const isAnnual = !isPool && paidAmount >= annualMinWei;
+          const expiresAt = new Date(
+            now + (isAnnual ? ONE_YEAR_MS : THIRTY_DAYS_MS)
+          );
+
           await prisma.user.update({
             where: { id: session.sub },
             data: {
               wallet_address: getAddress(walletParam),
-              premium_expires_at: expiresAt,
+              ...(isPool
+                ? { pool_premium_expires_at: expiresAt }
+                : { premium_expires_at: expiresAt }),
             },
           });
-          out.premiumExpiresAt = expiresAt.toISOString();
+
+          if (isPool) {
+            out.poolPremiumExpiresAt = expiresAt.toISOString();
+          } else {
+            out.premiumExpiresAt = expiresAt.toISOString();
+          }
         }
       }
     }

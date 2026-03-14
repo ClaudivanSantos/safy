@@ -30,6 +30,12 @@ export const CHAINS = {
     chainId: 42161,
     dexscreenerId: "arbitrum",
   },
+  base: {
+    name: "Base",
+    rpc: "https://mainnet.base.org",
+    chainId: 8453,
+    dexscreenerId: "base",
+  },
 } as const;
 
 export const CHAIN_IDS = Object.keys(CHAINS) as ChainId[];

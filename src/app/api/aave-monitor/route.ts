@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendTelegramMessage } from "@/services/telegram";
-import { AAVE_NETWORKS, POOL_ABI } from "@/app/saude-defi/aave-config";
+import { AAVE_NETWORKS, AAVE_NETWORK_IDS, POOL_ABI, type AaveNetworkId } from "@/app/aave/aave-config";
 import {
   createPublicClient,
   http,
@@ -10,10 +10,7 @@ import {
 } from "viem";
 import { fallback } from "viem";
 
-const RAY = BigInt(10) ** BigInt(27);
 const WAD = BigInt(10) ** BigInt(18);
-const BASE_CURRENCY_DECIMALS = 8;
-
 const HF_ALERT_THRESHOLD = 1.2; // alerta quando HF < 1.2
 
 type UserAccountData = {
@@ -48,8 +45,11 @@ function isPremiumActive(premium_expires_at: Date | string | null | undefined): 
   return d.getTime() > Date.now();
 }
 
-async function fetchAaveAccountDataEthereum(userAddress: `0x${string}`): Promise<UserAccountData | null> {
-  const network = AAVE_NETWORKS.ethereum;
+async function fetchAaveAccountDataForNetwork(
+  networkId: AaveNetworkId,
+  userAddress: `0x${string}`
+): Promise<UserAccountData | null> {
+  const network = AAVE_NETWORKS[networkId];
   const transport = fallback(
     network.rpcUrls.map((url) => http(url, { timeout: 15_000 }))
   );
@@ -94,7 +94,7 @@ async function fetchAaveAccountDataEthereum(userAddress: `0x${string}`): Promise
       healthFactor: decoded[5]!,
     };
   } catch (err) {
-    console.error("Erro ao buscar dados da Aave (monitor):", err);
+    console.error(`Erro ao buscar dados da Aave (monitor, rede ${networkId}):`, err);
     return null;
   }
 }
@@ -136,26 +136,36 @@ export async function GET(request: Request) {
       const addr = user.wallet_address;
       if (!addr || !addr.startsWith("0x") || addr.length !== 42) continue;
 
-      const accountData = await fetchAaveAccountDataEthereum(addr as `0x${string}`);
-      if (!accountData) continue;
+      const alertsByNetwork: { networkName: string; hfStr: string; dropPercent: number }[] = [];
 
-      if (accountData.totalDebtBase === BigInt(0)) continue;
+      for (const networkId of AAVE_NETWORK_IDS) {
+        const accountData = await fetchAaveAccountDataForNetwork(networkId, addr as `0x${string}`);
+        if (!accountData || accountData.totalDebtBase === BigInt(0)) continue;
 
-      const hfStr = formatHealthFactor(accountData.healthFactor, accountData.totalDebtBase);
-      const hfScaled = (accountData.healthFactor * BigInt(100)) / WAD;
-      const hfNum = Number(hfScaled) / 100;
+        const hfStr = formatHealthFactor(accountData.healthFactor, accountData.totalDebtBase);
+        const hfScaled = (accountData.healthFactor * BigInt(100)) / WAD;
+        const hfNum = Number(hfScaled) / 100;
 
-      if (!Number.isFinite(hfNum) || hfNum >= HF_ALERT_THRESHOLD) {
-        continue;
+        if (!Number.isFinite(hfNum) || hfNum >= HF_ALERT_THRESHOLD) continue;
+
+        const dropPercent = getLiquidationDropPercent(accountData);
+        alertsByNetwork.push({
+          networkName: AAVE_NETWORKS[networkId].name,
+          hfStr,
+          dropPercent,
+        });
       }
 
-      const dropPercent = getLiquidationDropPercent(accountData);
+      if (alertsByNetwork.length === 0) continue;
 
+      const lines = alertsByNetwork.map(
+        (a) =>
+          `• ${a.networkName}: HF ${a.hfStr} — Queda até liquidação: ${a.dropPercent.toFixed(1)}%`
+      );
       const message =
         "⚠️ Alerta de risco Aave\n\n" +
-        `Health factor atual (Ethereum): ${hfStr}\n` +
-        `Queda estimada até liquidação: ${dropPercent.toFixed(1)}%\n\n` +
-        "Reveja seu colateral e dívida na Aave para reduzir o risco de liquidação.";
+        lines.join("\n") +
+        "\n\nReveja seu colateral e dívida na Aave para reduzir o risco de liquidação.";
 
       await sendTelegramMessage(chatId, message);
     }

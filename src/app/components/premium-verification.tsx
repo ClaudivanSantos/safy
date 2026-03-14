@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { encodeFunctionData, parseAbiItem } from "viem";
 import { SiBinance, SiPolygon, SiEthereum, SiTelegram } from "react-icons/si";
@@ -29,6 +29,7 @@ type PaymentInfo = {
   currency: string;
   networks: NetworkOption[];
   premiumExpiresAt?: string | null;
+  poolPremiumExpiresAt?: string | null;
 };
 
 function WalletIcon({ className }: { className?: string }) {
@@ -50,10 +51,25 @@ function WalletIcon({ className }: { className?: string }) {
   );
 }
 
+function fetchPaymentInfo(): Promise<PaymentInfo | null> {
+  return fetch("/api/premium-payment-info", { credentials: "include" })
+    .then((res) => {
+      if (!res.ok) return null;
+      return res.json();
+    })
+    .then((data: PaymentInfo | null) => {
+      if (data?.networks?.length) return data;
+      return null;
+    })
+    .catch(() => null);
+}
+
 export function PremiumVerification() {
   const { address, connecting, connectWallet } = useWallet();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [paymentInfoLoading, setPaymentInfoLoading] = useState(false);
+  const [paymentInfoError, setPaymentInfoError] = useState<string | null>(null);
   const [selectedNetworkId, setSelectedNetworkId] = useState<PremiumNetworkId>("bsc");
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual");
   const [payingLoading, setPayingLoading] = useState(false);
@@ -87,28 +103,34 @@ export function PremiumVerification() {
     };
   }, []);
 
+  const loadPaymentInfo = useCallback(() => {
+    if (!loggedIn) return;
+    setPaymentInfoError(null);
+    setPaymentInfoLoading(true);
+    fetchPaymentInfo()
+      .then((data) => {
+        setPaymentInfo(data ?? null);
+        if (!data) setPaymentInfoError(t("paymentConfigUnavailable"));
+        else if (!data.paymentAddress) setPaymentInfoError(t("paymentConfigUnavailable"));
+      })
+      .catch(() => {
+        setPaymentInfo(null);
+        setPaymentInfoError(t("paymentConfigUnavailable"));
+      })
+      .finally(() => {
+        setPaymentInfoLoading(false);
+      });
+  }, [loggedIn, t]);
+
   useEffect(() => {
     if (!loggedIn) {
       setPaymentInfo(null);
+      setPaymentInfoError(null);
+      setPaymentInfoLoading(false);
       return;
     }
-    let cancelled = false;
-    fetch("/api/premium-payment-info", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
-      .then((data: PaymentInfo | null) => {
-        if (!cancelled && data?.paymentAddress && data?.networks?.length)
-          setPaymentInfo(data);
-      })
-      .catch(() => {
-        if (!cancelled) setPaymentInfo(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [loggedIn]);
+    loadPaymentInfo();
+  }, [loggedIn, loadPaymentInfo]);
 
   const ensureChain = async (
     eth: { request: (p: { method: string; params?: unknown[] }) => Promise<unknown> },
@@ -194,17 +216,19 @@ export function PremiumVerification() {
       for (let i = 0; i < maxAttempts; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         const rres = await fetch(
-          `/api/tx-receipt?hash=${encodeURIComponent(txHash)}&chain=${net.id}&wallet=${encodeURIComponent(address)}`,
+          `/api/tx-receipt?hash=${encodeURIComponent(txHash)}&chain=${net.id}&wallet=${encodeURIComponent(address)}&product=aave&paymentAddress=${encodeURIComponent(paymentInfo.paymentAddress)}`,
           { credentials: "include" }
         ).then((r) => r.json());
         const payload = rres as {
           receipt?: { blockNumber?: string; status?: string };
           premiumExpiresAt?: string;
+          poolPremiumExpiresAt?: string;
         };
         const res = payload?.receipt;
         if (res?.blockNumber && res?.status === "0x1") {
-          if (payload.premiumExpiresAt) {
-            const date = new Date(payload.premiumExpiresAt);
+          const dateStr = payload.premiumExpiresAt ?? payload.poolPremiumExpiresAt;
+          if (dateStr) {
+            const date = new Date(dateStr);
             const formatted = new Intl.DateTimeFormat("pt-BR", {
               dateStyle: "medium",
               timeStyle: "short",
@@ -216,6 +240,14 @@ export function PremiumVerification() {
             setMessage(t("paymentConfirmed"));
           }
           setPayingLoading(false);
+          if (paymentInfo && (payload.premiumExpiresAt || payload.poolPremiumExpiresAt)) {
+            fetch("/api/premium-payment-info", { credentials: "include" })
+              .then((r) => r.ok ? r.json() : null)
+              .then((data: PaymentInfo | null) => {
+                if (data?.paymentAddress && data?.networks?.length) setPaymentInfo(data);
+              })
+              .catch(() => {});
+          }
           return;
         }
       }
@@ -322,7 +354,28 @@ export function PremiumVerification() {
         </div>
       )}
 
-      {!isPremiumActive && canSeePremium && paymentInfo && (
+      {!isPremiumActive && canSeePremium && address && paymentInfoLoading && (
+        <div className="mb-4 rounded-lg border border-border bg-muted/20 px-4 py-6 text-center text-sm text-foreground/70">
+          {t("loadingPaymentOptions")}
+        </div>
+      )}
+
+      {!isPremiumActive && canSeePremium && address && !paymentInfoLoading && paymentInfoError && (
+        <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="mb-3 text-sm text-amber-100">
+            {paymentInfoError}
+          </p>
+          <button
+            type="button"
+            onClick={loadPaymentInfo}
+            className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-black hover:bg-primary-hover"
+          >
+            {t("retry")}
+          </button>
+        </div>
+      )}
+
+      {!isPremiumActive && canSeePremium && address && !paymentInfoLoading && paymentInfo && (
         <>
           <p className="mb-3 text-sm font-medium text-foreground">
             {t("whichPlan")}
