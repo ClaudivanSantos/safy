@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { encodeFunctionData, parseAbiItem } from "viem";
-import { SiBinance, SiPolygon, SiEthereum } from "react-icons/si";
+import { SiBinance, SiPolygon, SiEthereum, SiTelegram } from "react-icons/si";
 import { useWallet } from "@/app/contexts/wallet-context";
 import { useTranslation } from "@/app/hooks/use-translation";
 import type { PremiumNetworkId } from "@/lib/premium-networks";
@@ -53,6 +53,7 @@ export function PremiumPoolVerification() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [selectedNetworkId, setSelectedNetworkId] = useState<PremiumNetworkId>("bsc");
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual");
   const [payingLoading, setPayingLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -153,7 +154,8 @@ export function PremiumPoolVerification() {
       return;
     }
     const net = selectedNetwork;
-    const amountWei = BigInt(2) * BigInt(10) ** BigInt(net.decimals);
+    const priceUsd = billingPeriod === "annual" ? 18 : 2;
+    const amountWei = BigInt(priceUsd) * BigInt(10) ** BigInt(net.decimals);
     try {
       const okChain = await ensureChain(eth, net.chainIdHex, net.chainParams);
       if (!okChain) {
@@ -203,6 +205,7 @@ export function PremiumPoolVerification() {
               chain: net.id,
               wallet: address,
               paymentAddress: paymentInfo.paymentAddress,
+              billingPeriod,
             }),
           });
           const activateData = (await activateRes.json().catch(() => null)) as {
@@ -258,11 +261,21 @@ export function PremiumPoolVerification() {
       </p>
 
       {canSeePremium && isPoolPremiumActive && poolPremiumExpiresAt && (
-        <div className="mb-6 rounded-2xl border border-primary/40 bg-primary/10 p-5">
-          <p className="text-sm font-semibold text-primary/90">
-            {t("poolPremiumActiveBadge")}
-          </p>
-          <p className="mt-2 text-sm text-foreground/90">
+        <div className="mb-6 rounded-2xl border border-primary/40 bg-linear-to-r from-primary/15 via-primary/10 to-sky-500/10 p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary">
+              <span className="text-lg">⭐</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-primary/90">
+                {t("poolPremiumActiveBadge")}
+              </p>
+              <p className="text-sm text-foreground/80">
+                {t("premiumThanks")}
+              </p>
+            </div>
+          </div>
+          <p className="mb-4 text-sm text-foreground/90">
             {t("poolPremiumValidUntil")}
             <strong>
               {new Intl.DateTimeFormat("pt-BR", {
@@ -272,6 +285,15 @@ export function PremiumPoolVerification() {
             </strong>
             .
           </p>
+          <a
+            href="https://t.me/safyapp_bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-[#229ED9] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1b8ac0]"
+          >
+            <SiTelegram className="h-4 w-4" />
+            {t("telegramCta")}
+          </a>
         </div>
       )}
 
@@ -304,6 +326,33 @@ export function PremiumPoolVerification() {
 
       {!isPoolPremiumActive && canSeePremium && paymentInfo && paymentInfo.paymentAddress && (
         <>
+          <p className="mb-3 text-sm font-medium text-foreground">
+            {t("whichPlan")}
+          </p>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setBillingPeriod("monthly")}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                billingPeriod === "monthly"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
+              }`}
+            >
+              <span>{t("monthly")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingPeriod("annual")}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                billingPeriod === "annual"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-muted/50"
+              }`}
+            >
+              <span>{t("annual")}</span>
+            </button>
+          </div>
           <p className="mb-3 text-sm font-medium text-foreground">{t("whichNetwork")}</p>
           <div className="mb-4 flex flex-wrap gap-2">
             {paymentInfo.networks.map((n) => (
@@ -329,7 +378,12 @@ export function PremiumPoolVerification() {
           <p className="mb-2 text-xs text-foreground/60">
             {t("walletWillOpen")
               .replace("{network}", selectedNetwork?.name ?? selectedNetworkId)
-              .replace("{amount}", "2 USDT (1 mês)")}
+              .replace(
+                "{amount}",
+                billingPeriod === "annual"
+                  ? "18 USDT (annual plan)"
+                  : "2 USDT (1 month)",
+              )}
           </p>
           {canOpenWallet && (
             <button
@@ -341,7 +395,12 @@ export function PremiumPoolVerification() {
               {payingLoading
                 ? t("waitingConfirmation")
                 : t("openWalletAndPay")
-                    .replace("{amount}", "2 USDT (mensal)")
+                    .replace(
+                      "{amount}",
+                      billingPeriod === "annual"
+                        ? "18 USDT (annual)"
+                        : "2 USDT (monthly)",
+                    )
                     .replace("{network}", selectedNetworkId.toUpperCase())}
             </button>
           )}

@@ -166,8 +166,25 @@ export default function AaveClient({ initialAddress }: { initialAddress?: string
   const [resultsByNetwork, setResultsByNetwork] = useState<
     Record<AaveNetworkId, { accountData: UserAccountData; collaterals: CollateralRow[]; debts: DebtRow[] } | { error: string } | null>
   >({ ethereum: null, polygon: null, arbitrum: null, base: null });
+  /** Se o usuário tem premium Aave ativo, não mostramos o banner ★ Premium ★ */
+  const [isPremiumActive, setIsPremiumActive] = useState(false);
 
   const { t } = useTranslation("defiHealthPage");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/premium-payment-info", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { premiumExpiresAt?: string } | null) => {
+        if (cancelled || !data?.premiumExpiresAt) return;
+        const expiresAt = new Date(data.premiumExpiresAt);
+        if (expiresAt.getTime() > Date.now()) setIsPremiumActive(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /** Busca dados da Aave para uma rede e retorna (não seta estado). Em falha de UiPoolDataProvider, retorna accountData com colaterais/dívidas vazios (comportamento tipo tela de pools). */
   const fetchAaveDataForNetwork = useCallback(
@@ -382,21 +399,23 @@ export default function AaveClient({ initialAddress }: { initialAddress?: string
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="mx-auto max-w-5xl space-y-10">
-        {/* Premium em destaque no topo */}
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
-          <span className="text-base font-semibold text-primary">
-            ★ {t("premiumLink")} ★
-          </span>
-          <p className="text-sm text-foreground/80">
-            {t("premiumTeaser")}
-          </p>
-          <Link
-            href="/premium"
-            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-          >
-            {t("premiumLearnMore")}
-          </Link>
-        </div>
+        {/* Premium em destaque no topo — só para quem não é premium */}
+        {!isPremiumActive && (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
+            <span className="text-base font-semibold text-primary">
+              ★ {t("premiumLink")} ★
+            </span>
+            <p className="text-sm text-foreground/80">
+              {t("premiumTeaser")}
+            </p>
+            <Link
+              href="/premium"
+              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+            >
+              {t("premiumLearnMore")}
+            </Link>
+          </div>
+        )}
 
         {/* Hero */}
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">

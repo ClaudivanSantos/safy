@@ -14,7 +14,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
-  let body: { txHash?: string; chain?: string; wallet?: string; paymentAddress?: string };
+  let body: {
+    txHash?: string;
+    chain?: string;
+    wallet?: string;
+    paymentAddress?: string;
+    billingPeriod?: "monthly" | "annual";
+  };
   try {
     body = await request.json();
   } catch {
@@ -23,6 +29,7 @@ export async function POST(request: Request) {
 
   const txHash = body.txHash;
   const walletParam = body.wallet;
+  const billingPeriod = body.billingPeriod === "annual" ? "annual" : "monthly";
 
   if (!txHash || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
     return NextResponse.json({ error: "Hash inválido." }, { status: 400 });
@@ -33,7 +40,10 @@ export async function POST(request: Request) {
 
   const now = Date.now();
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-  const expiresAt = new Date(now + THIRTY_DAYS_MS);
+  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+  const expiresAt = new Date(
+    now + (billingPeriod === "annual" ? ONE_YEAR_MS : THIRTY_DAYS_MS)
+  );
 
   let walletNormalized: string;
   try {

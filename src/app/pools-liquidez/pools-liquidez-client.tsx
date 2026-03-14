@@ -53,6 +53,8 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Se o usuário tem premium de pools ativo, não mostramos o banner ★ Premium ★ */
+  const [isPoolPremiumActive, setIsPoolPremiumActive] = useState(false);
   /** Por rede: lista de pools da carteira. null = ainda não consultado. */
   const [resultsByChain, setResultsByChain] = useState<Record<PoolNetworkId, ApiPoolRow[] | null>>({
     ethereum: null,
@@ -63,6 +65,21 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
   });
 
   const { t } = useTranslation("pools");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/premium-payment-info", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { poolPremiumExpiresAt?: string } | null) => {
+        if (cancelled || !data?.poolPremiumExpiresAt) return;
+        const expiresAt = new Date(data.poolPremiumExpiresAt);
+        if (expiresAt.getTime() > Date.now()) setIsPoolPremiumActive(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleVerificar = async () => {
     setError(null);
@@ -179,21 +196,23 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="mx-auto max-w-5xl space-y-10">
-        {/* Premium em destaque no topo (igual à tela Aave) */}
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
-          <span className="text-base font-semibold text-primary">
-            ★ {t("subscribePremium")} ★
-          </span>
-          <p className="text-sm text-foreground/80">
-            {t("subscribePremiumTeaser")}
-          </p>
-          <Link
-            href="/premium-pools"
-            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-          >
-            {t("premiumLearnMore")}
-          </Link>
-        </div>
+        {/* Premium em destaque no topo — só para quem não é premium */}
+        {!isPoolPremiumActive && (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
+            <span className="text-base font-semibold text-primary">
+              ★ {t("subscribePremium")} ★
+            </span>
+            <p className="text-sm text-foreground/80">
+              {t("subscribePremiumTeaser")}
+            </p>
+            <Link
+              href="/premium-pools"
+              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+            >
+              {t("premiumLearnMore")}
+            </Link>
+          </div>
+        )}
 
         {/* Hero */}
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">

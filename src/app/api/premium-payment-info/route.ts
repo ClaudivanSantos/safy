@@ -17,9 +17,10 @@ export async function GET() {
   }
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { premium_expires_at: true },
+    select: { premium_expires_at: true, pool_premium_expires_at: true },
   });
   const premiumExpiresAt = user?.premium_expires_at?.toISOString() ?? null;
+  const poolPremiumExpiresAt = user?.pool_premium_expires_at?.toISOString() ?? null;
   const networks = PREMIUM_NETWORKS.map((n) => ({
     id: n.id,
     name: n.name,
@@ -35,5 +36,6 @@ export async function GET() {
     currency: "USDT",
     networks,
     premiumExpiresAt,
+    poolPremiumExpiresAt,
   });
 }
