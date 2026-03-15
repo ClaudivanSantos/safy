@@ -399,23 +399,43 @@ export default function AaveClient({ initialAddress }: { initialAddress?: string
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="mx-auto max-w-5xl space-y-10">
-        {/* Premium em destaque no topo — só para quem não é premium */}
-        {!isPremiumActive && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
-            <span className="text-base font-semibold text-primary">
-              ★ {t("premiumLink")} ★
-            </span>
-            <p className="text-sm text-foreground/80">
-              {t("premiumTeaser")}
-            </p>
-            <Link
-              href="/premium"
-              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-            >
-              {t("premiumLearnMore")}
-            </Link>
-          </div>
-        )}
+        {/* Premium: se ativo, mostra mensagem + plano ativo + Saber mais; senão mostra CTA */}
+        <div className={`flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3 ${isPremiumActive ? "bg-primary/10" : "bg-primary/15"}`}>
+          {isPremiumActive ? (
+            <>
+              <span className="text-base font-semibold text-primary">
+                ★ {t("premiumLink")} ★
+              </span>
+              <p className="text-sm text-foreground/80">
+                {t("premiumTeaser")}
+              </p>
+              <span className="shrink-0 rounded-lg border border-primary/50 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                {t("premiumActiveBadge")}
+              </span>
+              <Link
+                href="/premium"
+                className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              >
+                {t("premiumLearnMore")}
+              </Link>
+            </>
+          ) : (
+            <>
+              <span className="text-base font-semibold text-primary">
+                ★ {t("premiumLink")} ★
+              </span>
+              <p className="text-sm text-foreground/80">
+                {t("premiumTeaser")}
+              </p>
+              <Link
+                href="/premium"
+                className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              >
+                {t("premiumLearnMore")}
+              </Link>
+            </>
+          )}
+        </div>
 
         {/* Hero */}
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">

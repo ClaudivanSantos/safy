@@ -6,6 +6,15 @@ import { useWallet, shortAddress } from "@/app/contexts/wallet-context";
 import { useTranslation } from "@/app/hooks/use-translation";
 import { SiBinance, SiEthereum, SiPolygon } from "react-icons/si";
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+import {
   PREMIUM_NETWORKS,
   type PremiumNetworkId,
 } from "@/lib/premium-networks";
@@ -72,7 +81,7 @@ const TOKENS_BY_CHAIN: Record<
   ethereum: [],
 };
 
-export default function CarteiraClient() {
+export default function WalletClient() {
   const { address, connecting, connectWallet } = useWallet();
   const [state, setState] = useState<State>({ status: "idle" });
   const { t } = useTranslation("wallet");
@@ -115,7 +124,7 @@ export default function CarteiraClient() {
               chainId: net.id,
               chainName: net.name,
               symbol: net.chainParams.nativeCurrency.symbol,
-              name: `${net.chainParams.nativeCurrency.name} (nativo)`,
+              name: `${net.chainParams.nativeCurrency.name} (native)`,
               balanceFormatted: formatUnits(
                 nativeBal,
                 net.chainParams.nativeCurrency.decimals
@@ -124,10 +133,10 @@ export default function CarteiraClient() {
             });
           }
         } catch {
-          // ignorar falha de RPC da moeda nativa
+          // ignore native RPC failure
         }
 
-        // ERC20 tokens configurados (USDT / USDC)
+        // ERC20 tokens (USDT / USDC)
         for (const token of TOKENS_BY_CHAIN[net.id] ?? []) {
           try {
             const balance = await client.readContract({
@@ -162,7 +171,7 @@ export default function CarteiraClient() {
               isNative: false,
             });
           } catch {
-            // ignorar token que falhou
+            // ignore failed token
           }
         }
       }
@@ -173,7 +182,6 @@ export default function CarteiraClient() {
           message: t("noBalances"),
         });
       } else {
-        // ordenar por rede e depois por símbolo
         items.sort((a, b) => {
           if (a.chainId === b.chainId) {
             return a.symbol.localeCompare(b.symbol);
@@ -239,7 +247,7 @@ export default function CarteiraClient() {
           </div>
         </header>
 
-        {/* Estado / mensagens */}
+        {/* State / messages */}
         {!hasAddress && (
           <section className="rounded-xl border border-border bg-muted/20 p-6">
             <p className="text-sm text-foreground/70">
@@ -265,7 +273,52 @@ export default function CarteiraClient() {
         )}
 
         {hasAddress && state.status === "loaded" && (
-          <section className="space-y-4">
+          <section className="space-y-6">
+            <div className="rounded-xl border border-border bg-muted/20 p-6">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground/70">
+                {t("chartTitle")}
+              </h2>
+              <div className="h-64 w-full min-w-0 sm:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={state.items.map((token) => ({
+                      name: `${token.symbol} · ${token.chainName}`,
+                      value: parseFloat(token.balanceFormatted) || 0,
+                      symbol: token.symbol,
+                    }))}
+                    margin={{ top: 8, right: 8, left: 8, bottom: 24 }}
+                    layout="vertical"
+                  >
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={120}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        value.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 6,
+                        }),
+                        t("balance"),
+                      ]}
+                      contentStyle={{
+                        borderRadius: "8px",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="var(--color-primary)">
+                      {state.items.map((_, i) => (
+                        <Cell key={i} fill="var(--color-primary)" />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
             {PREMIUM_CHAIN_ORDER.map((chainId) => {
               const byChain = state.items.filter((i) => i.chainId === chainId);
               if (!byChain.length) return null;
@@ -326,4 +379,3 @@ export default function CarteiraClient() {
     </div>
   );
 }
-

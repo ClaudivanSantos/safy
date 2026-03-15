@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "@/app/hooks/use-translation";
-import { useLanguage } from "@/app/contexts/language-context";
 
 type UserMenuProps = {
   userName: string | null;
@@ -13,7 +12,6 @@ export function UserMenu({ userName }: UserMenuProps) {
   const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation("common");
-  const { language, setLanguage } = useLanguage();
 
   useEffect(() => {
     setMounted(true);
@@ -76,36 +74,6 @@ export function UserMenu({ userName }: UserMenuProps) {
             </p>
           </div>
           <div className="border-t border-border pt-1">
-            <div className="px-4 pb-2 pt-1 md:hidden">
-              <p className="mb-1 text-xs font-medium text-foreground/60">
-                {t("langToggleTitle")}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setLanguage("en")}
-                  className={`flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-xs ${
-                    language === "en"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-muted/40 text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <span aria-hidden>🇺🇸</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLanguage("pt-BR")}
-                  className={`flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-xs ${
-                    language === "pt-BR"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-muted/40 text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <span aria-hidden>🇧🇷</span>
-                </button>
-              </div>
-            </div>
-            <div className="my-1 border-t border-border" />
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"

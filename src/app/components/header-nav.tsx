@@ -5,9 +5,9 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "@/app/hooks/use-translation";
 
 const LINKS = [
-  { href: "/pools-liquidez", key: "pools" as const },
+  { href: "/wallet", key: "wallet" as const },
+  { href: "/pools", key: "pools" as const },
   { href: "/aave", key: "defiHealth" as const },
-  // Premium acessível dentro da página Aave (link na seção Links)
 ];
 
 export function HeaderNav() {

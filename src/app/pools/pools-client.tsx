@@ -14,7 +14,7 @@ import {
   getKrystalLiquidityUrl,
 } from "./pools-config";
 
-/** Item de pool retornado pela API interna /api/pools (posições da carteira). */
+/** Pool row from internal /api/pools (wallet positions). */
 type ApiPoolRow = {
   source: "api";
   id: string;
@@ -36,7 +36,7 @@ function formatUsd(value: number | string | null): string {
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
   if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
   if (n >= 1e3) return `$${(n / 1e3).toFixed(2)}K`;
-  return new Intl.NumberFormat("pt-BR", {
+  return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(n);
@@ -47,15 +47,13 @@ function formatApy(value: number | null): string {
   return `${value.toFixed(2)}%`;
 }
 
-export default function PoolsLiquidezClient({ initialAddress }: { initialAddress?: string } = {}) {
+export default function PoolsClient({ initialAddress }: { initialAddress?: string } = {}) {
   const { address: contextAddress } = useWallet();
   const connectedAddress = contextAddress ?? (initialAddress && isAddress(initialAddress) ? initialAddress : null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** Se o usuário tem premium de pools ativo, não mostramos o banner ★ Premium ★ */
   const [isPoolPremiumActive, setIsPoolPremiumActive] = useState(false);
-  /** Por rede: lista de pools da carteira. null = ainda não consultado. */
   const [resultsByChain, setResultsByChain] = useState<Record<PoolNetworkId, ApiPoolRow[] | null>>({
     ethereum: null,
     bsc: null,
@@ -196,25 +194,43 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="mx-auto max-w-5xl space-y-10">
-        {/* Premium em destaque no topo — só para quem não é premium */}
-        {!isPoolPremiumActive && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 bg-primary/15 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3">
-            <span className="text-base font-semibold text-primary">
-              ★ {t("subscribePremium")} ★
-            </span>
-            <p className="text-sm text-foreground/80">
-              {t("subscribePremiumTeaser")}
-            </p>
-            <Link
-              href="/premium-pools"
-              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-            >
-              {t("premiumLearnMore")}
-            </Link>
-          </div>
-        )}
+        <div className={`flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/40 px-4 py-4 text-center sm:flex-row sm:gap-4 sm:py-3 ${isPoolPremiumActive ? "bg-primary/10" : "bg-primary/15"}`}>
+          {isPoolPremiumActive ? (
+            <>
+              <span className="text-base font-semibold text-primary">
+                ★ {t("subscribePremium")} ★
+              </span>
+              <p className="text-sm text-foreground/80">
+                {t("subscribePremiumTeaser")}
+              </p>
+              <span className="shrink-0 rounded-lg border border-primary/50 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                {t("premiumActiveBadge")}
+              </span>
+              <Link
+                href="/premium-pools"
+                className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              >
+                {t("premiumLearnMore")}
+              </Link>
+            </>
+          ) : (
+            <>
+              <span className="text-base font-semibold text-primary">
+                ★ {t("subscribePremium")} ★
+              </span>
+              <p className="text-sm text-foreground/80">
+                {t("subscribePremiumTeaser")}
+              </p>
+              <Link
+                href="/premium-pools"
+                className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black transition hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              >
+                {t("premiumLearnMore")}
+              </Link>
+            </>
+          )}
+        </div>
 
-        {/* Hero */}
         <header className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-primary/15 via-background to-accent/10 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)_0%,transparent_50%)] opacity-30" />
           <h1 className="relative text-3xl font-bold tracking-tight text-foreground md:text-4xl">
@@ -260,7 +276,6 @@ export default function PoolsLiquidezClient({ initialAddress }: { initialAddress
           </div>
         </section>
 
-        {/* Resultados por rede */}
         {POOL_NETWORK_IDS.map((chainId) => {
           const pools = resultsByChain[chainId];
           const network = POOL_NETWORKS[chainId];

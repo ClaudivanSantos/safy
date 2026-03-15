@@ -4,7 +4,7 @@ import { verifySessionCookie, COOKIE_NAME } from "@/lib/auth-middleware";
 const PUBLIC_PATHS = ["/login", "/signup", "/api/auth", "/auth", "/aguarde-validacao", "/~offline"];
 
 /** Rotas ocultas: redirecionar para home para impedir acesso direto. */
-const HIDDEN_ROUTES = ["/dashboard", "/preco-medio", "/carteira"];
+const HIDDEN_ROUTES = ["/dashboard", "/preco-medio"];
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -16,7 +16,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  /** Redirecionar URL antiga /saude-defi para /aave */
+  /** Redirect old /carteira to /wallet */
+  if (pathname === "/carteira" || pathname.startsWith("/carteira/")) {
+    const newPath = pathname === "/carteira" ? "/wallet" : `/wallet${pathname.slice("/carteira".length)}`;
+    return NextResponse.redirect(new URL(newPath, request.url));
+  }
+
+  /** Redirect old /pools-liquidez to /pools */
+  if (pathname === "/pools-liquidez" || pathname.startsWith("/pools-liquidez/")) {
+    const newPath = pathname === "/pools-liquidez" ? "/pools" : `/pools${pathname.slice("/pools-liquidez".length)}`;
+    return NextResponse.redirect(new URL(newPath, request.url));
+  }
+
+  /** Redirect old /saude-defi to /aave */
   if (pathname === "/saude-defi" || pathname.startsWith("/saude-defi/")) {
     const newPath = pathname === "/saude-defi" ? "/aave" : `/aave${pathname.slice("/saude-defi".length)}`;
     return NextResponse.redirect(new URL(newPath, request.url));

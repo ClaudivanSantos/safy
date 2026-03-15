@@ -1,7 +1,6 @@
 /**
- * Configuração de redes para Pools de Liquidez (apenas leitura).
- * Ethereum usa a API interna /api/pools-subgraph com leitura on-chain sem login.
- * Multi-chain (Ethereum, BNB, Polygon, Arbitrum) usa /api/pools com RPC + Dexscreener + DefiLlama.
+ * Liquidity pools network config (read-only).
+ * Ethereum uses internal /api/pools-subgraph; multi-chain uses /api/pools with RPC + Dexscreener + DefiLlama.
  */
 
 export type PoolNetworkId = "ethereum" | "bsc" | "polygon" | "arbitrum" | "base";
@@ -13,7 +12,6 @@ export type PoolNetworkConfig = {
   chainId: number;
   dexName: string;
   dexAppUrl: string;
-  /** Se true, a rede tem leitura disponível via API interna (subgraph). */
   subgraphEnabled: boolean;
 };
 
@@ -63,13 +61,8 @@ export const POOL_NETWORKS: Record<PoolNetworkId, PoolNetworkConfig> = {
 export const POOL_NETWORK_IDS = Object.keys(POOL_NETWORKS) as PoolNetworkId[];
 export const POOL_PROTOCOL_IDS: PoolProtocolVersion[] = ["v2", "v3", "v4"];
 
-/** URL da API interna que consulta pools on-chain. */
 export const POOLS_SUBGRAPH_API = "/api/pools-subgraph";
-
-/** API multi-chain: RPC + Dexscreener + DefiLlama (GET ?wallet=&chain=). */
 export const POOLS_API = "/api/pools";
-
-/** API Llama Yield (pública, sem token) - lista global de pools. */
 export const LLAMA_YIELDS_POOLS_API = "https://yields.llama.fi/pools";
 
 export function getProtocolLabel(protocol: PoolProtocolVersion): string {

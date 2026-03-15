@@ -1,0 +1,55 @@
+import { NextResponse } from "next/server";
+import { sendTelegramMessage } from "@/services/telegram";
+
+const ALERT_CHAT_ID = process.env.ALERT_CHAT_ID;
+
+async function notifyCronError(message: string) {
+  if (!ALERT_CHAT_ID) return;
+  await sendTelegramMessage(ALERT_CHAT_ID, message);
+}
+
+export async function GET(request: Request) {
+  const secret = new URL(request.url).searchParams.get("secret");
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
+
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+  try {
+    const res = await fetch(`${base}/api/pool-range-monitor?secret=${process.env.CRON_SECRET}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const errMsg =
+        (data as { error?: string }).error ?? "Falha no pool-range-monitor";
+      console.error("Cron /api/cron/pool-range-monitor retornou erro:", {
+        status: res.status,
+        errMsg,
+      });
+      await notifyCronError(
+        `❌ Cron pool-range-monitor falhou (HTTP ${res.status}).\n\n${errMsg}`
+      );
+      return NextResponse.json(
+        { error: errMsg },
+        { status: res.status }
+      );
+    }
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error("Erro ao chamar pool-range-monitor no cron:", err);
+    await notifyCronError(
+      `❌ Cron pool-range-monitor falhou (exception).\n\n${String(
+        err instanceof Error ? err.message : err
+      )}`
+    );
+    return NextResponse.json(
+      { error: "Erro ao disparar pool-range-monitor" },
+      { status: 500 }
+    );
+  }
+}

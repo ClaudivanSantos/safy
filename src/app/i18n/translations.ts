@@ -46,6 +46,9 @@ export const translations: Record<Locale, TranslationTree> = {
       featureAveragePriceTitle: "Average Price",
       featureAveragePriceDescription:
         "Average price calculator for your cryptocurrency positions.",
+      featureWalletTitle: "Wallet",
+      featureWalletDescription:
+        "Quickly see the main tokens in your wallet on supported networks (BNB Chain, Polygon, Arbitrum).",
       featurePoolsTitle: "Liquidity Pools",
       featurePoolsDescription:
         "Your LP positions and pool list by network (Ethereum, BNB, Polygon, Arbitrum).",
@@ -243,6 +246,8 @@ export const translations: Record<Locale, TranslationTree> = {
         "No balance found on supported networks (BNB Chain, Polygon, Arbitrum) for native tokens, USDT or USDC.",
       fetchErrorDefault: "Error fetching wallet tokens.",
       loadingMessage: "Loading...",
+      chartTitle: "Token balances",
+      balance: "Balance",
     },
     averagePricePage: {
       title: "Average Price",
@@ -282,6 +287,7 @@ export const translations: Record<Locale, TranslationTree> = {
         "Connect your wallet in the header and click See my positions. We query Ethereum, BNB Chain, Polygon and Arbitrum via RPC; networks without positions show \"No position on this network\".",
       subscribePremium: "Premium",
       subscribePremiumTeaser: "Alerts when your position goes out of range (Uniswap V3).",
+      premiumActiveBadge: "Premium plan active",
       premiumLearnMore: "Learn more",
       myPositions: "My positions",
       errorLoading: "Error loading pools.",
@@ -316,6 +322,7 @@ export const translations: Record<Locale, TranslationTree> = {
       linksTitle: "Links",
       premiumLink: "Premium",
       premiumTeaser: "Exclusive benefits and alerts.",
+      premiumActiveBadge: "Premium plan active",
       premiumLearnMore: "Learn more",
       openOnAave: "Open position on Aave",
       hfLabel: "Health Factor",
@@ -426,6 +433,9 @@ export const translations: Record<Locale, TranslationTree> = {
       featureAveragePriceTitle: "Preço Médio",
       featureAveragePriceDescription:
         "Calculadora de preço médio para suas posições em criptomoedas.",
+      featureWalletTitle: "Carteira",
+      featureWalletDescription:
+        "Veja rapidamente os principais tokens da sua carteira nas redes suportadas (BNB Chain, Polygon, Arbitrum).",
       featurePoolsTitle: "Pools de Liquidez",
       featurePoolsDescription:
         "Suas posições LP e lista de pools por rede (Ethereum, BNB, Polygon, Arbitrum).",
@@ -622,6 +632,8 @@ export const translations: Record<Locale, TranslationTree> = {
         "Nenhum saldo encontrado nas redes suportadas (BNB Chain, Polygon, Arbitrum) para os tokens nativos, USDT ou USDC.",
       fetchErrorDefault: "Erro ao buscar tokens da carteira.",
       loadingMessage: "Carregando...",
+      chartTitle: "Saldos por token",
+      balance: "Saldo",
     },
     averagePricePage: {
       title: "Preço Médio",
@@ -661,6 +673,7 @@ export const translations: Record<Locale, TranslationTree> = {
         "Conecte a carteira no header e clique em Ver minhas posições. Consultamos Ethereum, BNB Chain, Polygon e Arbitrum via RPC; redes sem posição exibem \"Nenhuma posição nesta rede\".",
       subscribePremium: "Premium",
       subscribePremiumTeaser: "Alertas quando sua posição sair do range (Uniswap V3).",
+      premiumActiveBadge: "Plano premium ativo",
       premiumLearnMore: "Saber mais",
       myPositions: "Minhas posições",
       errorLoading: "Erro ao carregar pools.",
@@ -695,6 +708,7 @@ export const translations: Record<Locale, TranslationTree> = {
       linksTitle: "Links",
       premiumLink: "Premium",
       premiumTeaser: "Benefícios e alertas exclusivos.",
+      premiumActiveBadge: "Plano premium ativo",
       premiumLearnMore: "Saber mais",
       openOnAave: "Abrir posição na Aave",
       hfLabel: "Health Factor",

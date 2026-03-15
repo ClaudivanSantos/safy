@@ -11,8 +11,13 @@ const STORAGE_KEY = "safy-donation-modal-seen";
 
 const FEATURES = [
   {
+    key: "wallet" as const,
+    href: "/wallet",
+    icon: "👛",
+  },
+  {
     key: "pools" as const,
-    href: "/pools-liquidez",
+    href: "/pools",
     icon: "💧",
   },
   {
@@ -20,10 +25,10 @@ const FEATURES = [
     href: "/aave",
     icon: "❤️",
   },
-  // Ocultos: dashboard, averagePrice, wallet (rotas inacessíveis)
 ];
 
 const FEATURE_I18N: Record<(typeof FEATURES)[number]["key"], { title: string; description: string }> = {
+  wallet: { title: "featureWalletTitle", description: "featureWalletDescription" },
   pools: { title: "featurePoolsTitle", description: "featurePoolsDescription" },
   defiHealth: { title: "featureDefiHealthTitle", description: "featureDefiHealthDescription" },
 };
@@ -119,14 +124,14 @@ export function HomeClient() {
               <h2 className="mb-6 text-center text-xl font-semibold text-foreground md:text-2xl">
                 {t("featuresTitle")}
               </h2>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="flex flex-wrap justify-center gap-5">
                 {FEATURES.map((f) => {
                   const { title: titleKey, description: descriptionKey } = FEATURE_I18N[f.key];
                   return (
                     <Link
                       key={f.href}
                       href={f.href}
-                      className="group relative overflow-hidden rounded-xl border border-border bg-muted/20 p-6 transition hover:border-accent/40 hover:bg-muted/30"
+                      className="group relative w-full min-w-[260px] max-w-[320px] overflow-hidden rounded-xl border border-border bg-muted/20 p-6 transition hover:border-accent/40 hover:bg-muted/30"
                     >
                       <h3 className="font-semibold text-foreground group-hover:text-primary">
                         {t(titleKey)}
